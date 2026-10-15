@@ -17,6 +17,7 @@ public class ModPayloads {
         s2c(PartyDashboardPayload.ID, PartyDashboardPayload.CODEC);
         s2c(FloatingTextPayload.ID, FloatingTextPayload.CODEC);
         s2c(GoalPolePopupsPayload.ID, GoalPolePopupsPayload.CODEC);
+        s2c(OpenAntennaScreenPayload.ID, OpenAntennaScreenPayload.CODEC);
         s2c(SwitchableBlocksPayload.ID, SwitchableBlocksPayload.CODEC);
         s2c(StarSpacesPayload.ID, StarSpacesPayload.CODEC);
         s2c(PawnBeamsPayload.ID, PawnBeamsPayload.CODEC);
@@ -45,6 +46,7 @@ public class ModPayloads {
         c2s(HeldItemScrollPayload.ID, HeldItemScrollPayload.CODEC);
         c2s(GoalPoleBasePayload.ID, GoalPoleBasePayload.CODEC);
         c2s(GoalPolePayload.ID, GoalPolePayload.CODEC);
+        c2s(AntennaSettingsPayload.ID, AntennaSettingsPayload.CODEC);
         c2s(CartridgeGhostEditPayload.ID, CartridgeGhostEditPayload.CODEC);
         c2s(CartridgeSettingPayload.ID, CartridgeSettingPayload.CODEC);
         c2s(TokenSpellPayload.ID, TokenSpellPayload.CODEC);

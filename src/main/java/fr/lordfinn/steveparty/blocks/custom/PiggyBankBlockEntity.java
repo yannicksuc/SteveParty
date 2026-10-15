@@ -1,5 +1,7 @@
 package fr.lordfinn.steveparty.blocks.custom;
 
+import fr.lordfinn.steveparty.board.PartyLink;
+import fr.lordfinn.steveparty.board.PartyLinked;
 import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
@@ -54,7 +56,30 @@ import java.util.UUID;
  * Its target and cartridge go to the clients (the panel over it when looked at); a payout bursts its items out of the
  * slot and over each player paid, with what each one got or paid floating there.
  */
-public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload> {
+public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload>, PartyLinked {
+    /**
+     * The party element it serves, painted with the Tile Linker Brush (see {@link PartyLink}); unlinked, the closest
+     * party within {@link PartyBellBlockEntity#RANGE} blocks.
+     */
+    private final PartyLink partyLink = new PartyLink(this, this::syncLink);
+
+    @Override
+    public PartyLink partyLink() {
+        return partyLink;
+    }
+
+    private void syncLink() {
+        if (this.world == null || this.world.isClient) return;
+        BlockState state = getCachedState();
+        this.world.updateListeners(this.pos, state, state, Block.NOTIFY_LISTENERS);
+    }
+
+    /** The party it serves: the one of its link, else the closest one (running, or standing on its end). */
+    private Optional<PartyControllerEntity> party(ServerWorld world) {
+        if (partyLink.get() != null) return Optional.ofNullable(partyLink.runningParty(world, true));
+        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, this.pos, PartyBellBlockEntity.RANGE, true);
+    }
+
     /** Radius in which the "nearest player" target (and the free play fallbacks) look for players. */
     public static final int NEAREST_PLAYER_RANGE = 8;
     /** A ringing party bell this close tells which turn a pulse is about (see {@link #turnToken}). */
@@ -244,8 +269,7 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implemen
     }
 
     public List<ServerPlayerEntity> findTargets(ServerWorld world) {
-        Optional<PartyControllerEntity> party = PartyControllerEntity.getClosestSteppablePartyControllerEntity(
-                world, this.pos, PartyBellBlockEntity.RANGE, true);
+        Optional<PartyControllerEntity> party = party(world);
         List<ServerPlayerEntity> players = new ArrayList<>();
         switch (target) {
             case TURN_PLAYER -> {
@@ -335,6 +359,7 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implemen
     @Override
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.writeNbt(nbt, wrapper);
+        partyLink.write(nbt);
         nbt.putString("Target", target.asString());
         nbt.putInt("CycleIndex", cycleIndex);
         nbt.putBoolean("LastSucceeded", lastSucceeded);
@@ -344,6 +369,7 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implemen
     @Override
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
+        partyLink.read(nbt);
         target = Target.TURN_PLAYER;
         for (Target value : Target.values()) {
             if (value.asString().equals(nbt.getString("Target"))) target = value;

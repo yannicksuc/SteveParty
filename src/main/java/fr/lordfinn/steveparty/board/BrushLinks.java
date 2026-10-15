@@ -5,7 +5,6 @@ import fr.lordfinn.steveparty.blocks.custom.HopSwitchBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.MiniGameControllerBlockEntity;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
-import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
@@ -37,7 +36,7 @@ import java.util.stream.IntStream;
 /**
  * Everything the Tile Linker Brush links: the blocks holding a cartridge (board spaces of every role, routers, Hop
  * Switches, Looting Boxes, Piggy Banks, the Party Controller, for the chests of its bank; a Step Controller, for the
- * party element it drives, see {@link StepControllerLinks}; a Mini-game Controller, for the elements of its page, see
+ * party element it serves, as the Piggy Bank and the Party Antenna, see {@link PartyLinks}; a Mini-game Controller, for the elements of its page, see
  * {@link MiniGameControllerLinks}) and, for each, the kinds of links their cartridge
  * stores ({@link BrushLinkable}), given by {@link Provider}s: the built-in ones are in {@link CartridgeLinks}, another
  * holder or cartridge adds its own with {@link #register}. Same answers on both sides (the cartridges of the holders are
@@ -70,7 +69,7 @@ public final class BrushLinks {
     private static final List<Provider> PROVIDERS = new ArrayList<>(CartridgeLinks.PROVIDERS);
 
     static {
-        PROVIDERS.add(StepControllerLinks.PROVIDER);
+        PROVIDERS.add(PartyLinks.PROVIDER);
         PROVIDERS.add(ControllerStartLinks.PROVIDER);
         PROVIDERS.add(ControllerEndLinks.PROVIDER);
         PROVIDERS.add(MiniGameControllerLinks.PROVIDER);
@@ -90,7 +89,7 @@ public final class BrushLinks {
 
     private static boolean isHolder(@Nullable BlockEntity blockEntity) {
         return blockEntity instanceof CartridgeContainerBlockEntity || blockEntity instanceof PartyControllerEntity
-                || blockEntity instanceof StepControllerBlockEntity || blockEntity instanceof MiniGameControllerBlockEntity;
+                || blockEntity instanceof PartyLinked || blockEntity instanceof MiniGameControllerBlockEntity;
     }
 
     /**
@@ -102,7 +101,7 @@ public final class BrushLinks {
         BlockEntity blockEntity = world.getBlockEntity(resolved);
         if (blockEntity instanceof CartridgeContainerBlockEntity container) return held(world, resolved, BoardLinks.slotOf(container, level));
         if (blockEntity instanceof PartyControllerEntity) return held(world, resolved, BANK);
-        if (blockEntity instanceof StepControllerBlockEntity || blockEntity instanceof MiniGameControllerBlockEntity) return held(world, resolved, 0);
+        if (blockEntity instanceof PartyLinked || blockEntity instanceof MiniGameControllerBlockEntity) return held(world, resolved, 0);
         return null;
     }
 
@@ -129,7 +128,7 @@ public final class BrushLinks {
             return new Held(at, 0, ItemStack.EMPTY, () -> { },
                     player -> MiniGamePages.canEdit(player) && ScreenHandlerChecks.canBuildAt(player, at));
         }
-        if (blockEntity instanceof StepControllerBlockEntity && slot == 0) {
+        if (blockEntity instanceof PartyLinked && slot == 0) {
             // No cartridge: its link is kept by the block itself
             BlockPos at = pos.toImmutable();
             return new Held(at, 0, ItemStack.EMPTY, () -> { }, player -> ScreenHandlerChecks.canBuildAt(player, at));
@@ -207,7 +206,7 @@ public final class BrushLinks {
      * from a start tile); null for none.
      */
     static @Nullable BrushLinkable reverse(World world, BlockPos from, BlockPos to) {
-        BrushLinkable back = StepControllerLinks.reverse(world, from, to);
+        BrushLinkable back = PartyLinks.reverse(world, from, to);
         if (back == null) back = ControllerStartLinks.reverse(world, from, to);
         return back != null ? back : ControllerEndLinks.reverse(world, from, to);
     }

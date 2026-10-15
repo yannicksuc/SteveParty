@@ -167,6 +167,9 @@ public class PartyBoardGameTests implements SteveGameTest {
         controller.setInfiniteBank(true);
 
         var world = context.getWorld();
+        // Its start linked to it and its board read: its board is its own, whatever party runs in a test beside it
+        controller.setStartLinks(List.of(context.getAbsolutePos(START)));
+        controller.board(world, true);
         BlockPos middle = context.getAbsolutePos(MIDDLE), end = context.getAbsolutePos(END);
         ItemStack inventory = new ItemStack(ModItems.INVENTORY_CARTRIDGE);
         context.assertTrue(CartridgeContainers.shownSourceFor(inventory, world, middle).isUnlimited(),

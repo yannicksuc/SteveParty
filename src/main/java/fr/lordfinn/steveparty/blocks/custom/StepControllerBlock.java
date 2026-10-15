@@ -164,7 +164,7 @@ public class StepControllerBlock extends BlockWithEntity {
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        // The Tile Linker Brush paints its link (see StepControllerLinks): the use goes on to the brush
+        // The Tile Linker Brush paints its link (see PartyLinks): the use goes on to the brush
         if (TileLinkerBrush.isBrush(player.getMainHandStack())) return ActionResult.PASS;
         if (world.isClient) return ActionResult.SUCCESS;
         StepControllerBlockEntity blockEntity = (StepControllerBlockEntity) world.getBlockEntity(pos);

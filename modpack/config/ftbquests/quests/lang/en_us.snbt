@@ -129,11 +129,12 @@
 	]
 	quest.02E3D80EBC49D590.title: "Soft landing"
 	quest.030135F1CA2F65E1.quest_desc: [
-		"Right-click: pick a moment (party start, turn start, die rolled, mini-game end...). It pulses then, and a comparator reads a value (die result, rank...)."
-		"Wait mode (Wrench): the party freezes until the bell gets a signal."
+		"Right-click it with the Wrench: every moment it can listen to, by family (party, turns, coins and stars, events, mini-games). It pulses then, and a comparator reads a value (die result, rank...)."
+		"Wait mode: the party freezes until the antenna gets a signal."
+		"Link it with the Tile Linker Brush to any part of the game (the Party Controller, a space...): it listens to that party; not linked, it hears nothing."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "Craft it (owned ones don't count)"
-	quest.030135F1CA2F65E1.title: "Party Bell"
+	quest.030135F1CA2F65E1.title: "Party Antenna"
 	quest.042DD30AE9744165.quest_desc: [
 		"Your mini-games are written, linked and tested. Let the roulette spin!"
 	]
@@ -305,7 +306,7 @@
 	quest.0FC0569B81622F76.title: "Lime Star Fragment"
 	quest.101F5B0C2C547670.quest_desc: [
 		"A tape deck. Right-click a button on top: its mode. Previous · Replay · Next."
-		"Next + a pulse: skips what the party waits for (a turn not rolled, a bell, the practice round); in a mini-game, ends it with the podiums' places."
+		"Next + a pulse: skips what the party waits for (a turn not rolled, an antenna, the practice round); in a mini-game, ends it with the podiums' places."
 		"Replay + a pulse: the turn is undone and played again, or the round restarts. Previous: back to the turn before."
 		"Link it to any part of a game with the Tile Linker Brush; otherwise it drives the nearest party (64 blocks)."
 	]
@@ -596,6 +597,7 @@
 	quest.280705EA919A80DA.quest_desc: [
 		"A ceramic pig with an Inventory Cartridge. Each pulse gives (or takes) its items: player of the turn, mini-game winners, everyone or the nearest."
 		"All-or-nothing mode: sell a Party Star for Coins."
+		"Link it to any part of a game with the Tile Linker Brush; otherwise it serves the nearest party (64 blocks)."
 	]
 	quest.280705EA919A80DA.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.280705EA919A80DA.title: "Piggy Bank"
@@ -722,7 +724,7 @@
 	quest.346595A5E4D15B1C.title: "Wooden Panel"
 	quest.3476803BD17DBC9E.quest_desc: [
 		"A orange plastic stud + paper + redstone: 4 cards."
-		"Rings the Party Bells set to Event; the channel is the stack size."
+		"Pings the Party Antennas set to Event; the channel is the stack size."
 		"Program tab: 24 slots, read left to right."
 	]
 	quest.3476803BD17DBC9E.quest_subtitle: "Craft it (owned ones don't count)"

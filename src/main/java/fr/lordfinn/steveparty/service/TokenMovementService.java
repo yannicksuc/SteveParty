@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.service;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
@@ -279,6 +280,7 @@ public class TokenMovementService {
             // Homing module: the token takes a branch by itself, nobody is asked
             moveEntity(mob, homing.position());
         } else if (destinations.size() > 1) {
+            PartyControllerEntity.onTokenMoment((ServerWorld) mob.getWorld(), mob, PartyMoment.CROSSROADS, destinations.size());
             // Remove the arrows of a previous display (re-triggered movement) to avoid duplicates
             tileEntity.hideDestinations();
             tileEntity.displayDestinations(getDestinationChooser(mob), destinations, mob.getUuid());
@@ -311,6 +313,13 @@ public class TokenMovementService {
         return closest instanceof ServerPlayerEntity serverPlayer ? serverPlayer : null;
     }
 
+    /** The way from {@code from} to {@code to} as an antenna tells it: 1 north, 2 east, 3 south, 4 west (the main axis). */
+    public static int direction(BlockPos from, BlockPos to) {
+        int dx = to.getX() - from.getX(), dz = to.getZ() - from.getZ();
+        if (Math.abs(dx) > Math.abs(dz)) return dx > 0 ? 2 : 4;
+        return dz > 0 ? 3 : 1;
+    }
+
     public static void moveEntityOnTileToDestination(ServerWorld world, BlockPos tileOrigin, BoardSpaceDestination tileDestination) {
         moveEntityOnTileToDestination(world, tileOrigin, tileDestination, null);
     }
@@ -341,6 +350,7 @@ public class TokenMovementService {
         // A branch locked by a closed Key gate: the arrows stay while its player answers (see KeyGates)
         if (KeyGates.holdsAtChoice(mob, tileEntity, tileDestination)) return;
         tileEntity.hideDestinations();
+        PartyControllerEntity.onTokenMoment(world, mob, PartyMoment.PATH_CHOSEN, direction(tileOrigin, tileDestination.position()));
         moveEntity(mob, tileDestination.position());
     }
 

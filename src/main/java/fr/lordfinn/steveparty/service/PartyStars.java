@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyResources;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.TurnJournal;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.PartyStep;
@@ -220,6 +221,8 @@ public final class PartyStars {
         }
         BlockPos chosen = spaces.get(world.getRandom().nextInt(spaces.size()));
         party.setStarSpace(chosen);
+        // Its first appearance is not a move; the antennas get its place among the star spaces, from 1
+        if (previous != null) party.ringMoment(PartyMoment.STAR_MOVES, activeStarSpaces(world, party).indexOf(chosen) + 1);
         MessageUtils.sendToPlayers(party.getPartyAudience(), Text.translatable(previous == null
                 ? "message.steveparty.star.appeared" : "message.steveparty.star.moved", BoardText.pos(chosen))
                 .formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);

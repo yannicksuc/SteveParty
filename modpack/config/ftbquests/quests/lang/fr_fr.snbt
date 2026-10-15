@@ -129,11 +129,12 @@
 	]
 	quest.02E3D80EBC49D590.title: "Tout en douceur"
 	quest.030135F1CA2F65E1.quest_desc: [
-		"Clic droit : choisis un moment (début de partie, de manche, de tour, dé lancé, fin de mini-jeu...). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...)."
-		"Mode attente (Clé à molette) : la partie se fige jusqu'à ce qu'elle reçoive un signal."
+		"Clic droit avec la Clé à molette : tous les moments qu'elle peut écouter, par famille (partie, tours, pièces et étoiles, évènements, mini-jeux). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...)."
+		"Mode attente : la partie se fige jusqu'à ce qu'elle reçoive un signal."
+		"Lie-la au Pinceau lieur à un élément d'une partie (le Contrôleur de Party, une case...) : elle écoute cette partie ; pas liée, elle n'entend rien."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
-	quest.030135F1CA2F65E1.title: "Cloche de Party"
+	quest.030135F1CA2F65E1.title: "Antenne de Party"
 	quest.042DD30AE9744165.quest_desc: [
 		"Tes mini-jeux sont écrits, liés et testés. Que la roulette tourne !"
 	]
@@ -305,7 +306,7 @@
 	quest.0FC0569B81622F76.title: "Fragment d'étoile vert clair"
 	quest.101F5B0C2C547670.quest_desc: [
 		"Un magnétophone. Clic droit sur un bouton du dessus : son mode. Précédent · Rejouer · Suivant."
-		"Suivant + une impulsion : passe ce que la partie attend (tour pas lancé, cloche, manche de chauffe) ; en mini-jeu, le termine avec les places des podiums."
+		"Suivant + une impulsion : passe ce que la partie attend (tour pas lancé, antenne, manche de chauffe) ; en mini-jeu, le termine avec les places des podiums."
 		"Rejouer + une impulsion : le tour est annulé et rejoué, ou la manche recommence. Précédent : retour au tour d'avant."
 		"Lie-le au Pinceau lieur à un élément d'une partie ; sinon il pilote la partie la plus proche (64 blocs)."
 	]
@@ -596,6 +597,7 @@
 	quest.280705EA919A80DA.quest_desc: [
 		"Un cochon en céramique avec une Cartouche Bonus / Malus. Chaque impulsion donne (ou prend) ses objets : joueur du tour, gagnants du mini-jeu, tout le monde ou le plus proche."
 		"Mode tout ou rien : de quoi vendre une Party Star contre des Pièces."
+		"Lie-la au Pinceau lieur à un élément d'une partie ; sinon elle sert la partie la plus proche (64 blocs)."
 	]
 	quest.280705EA919A80DA.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.280705EA919A80DA.title: "Tirelire"
@@ -722,7 +724,7 @@
 	quest.346595A5E4D15B1C.title: "Grand panneau en bois"
 	quest.3476803BD17DBC9E.quest_desc: [
 		"Un plot en plastique orange + papier + redstone : 4 cartes."
-		"Fait sonner les Cloches réglées sur Évènement ; le canal est la taille de la pile."
+		"Fait capter les Antennes de Party réglées sur Évènement ; le canal est la taille de la pile."
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.3476803BD17DBC9E.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"

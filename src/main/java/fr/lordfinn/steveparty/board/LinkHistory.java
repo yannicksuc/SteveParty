@@ -7,7 +7,6 @@ import fr.lordfinn.steveparty.minigame.MiniGamePipeLink;
 import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 
-import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -51,7 +50,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange, PageLinksChange, PipePageChange, EventPipesChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, PartyLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange, PageLinksChange, PipePageChange, EventPipesChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -165,13 +164,13 @@ public final class LinkHistory {
         }
     }
 
-    /** The party element a Step Controller drives (null: none), see {@link StepControllerLinks}. */
-    public record StepLinkChange(BlockPos pos, @Nullable GlobalPos before, @Nullable GlobalPos after) implements Change {
+    /** The party element a {@link PartyLinked} block serves (null: none), see {@link PartyLinks}. */
+    public record PartyLinkChange(BlockPos pos, @Nullable GlobalPos before, @Nullable GlobalPos after) implements Change {
         @Override
         public boolean apply(ServerWorld world, boolean undo) {
-            if (!(world.getBlockEntity(pos) instanceof StepControllerBlockEntity stepController)
-                    || !Objects.equals(stepController.getLink(), undo ? after : before)) return false;
-            stepController.setLink(undo ? before : after);
+            if (!(world.getBlockEntity(pos) instanceof PartyLinked linked)
+                    || !Objects.equals(linked.partyLink().get(), undo ? after : before)) return false;
+            linked.partyLink().set(undo ? before : after);
             return true;
         }
     }

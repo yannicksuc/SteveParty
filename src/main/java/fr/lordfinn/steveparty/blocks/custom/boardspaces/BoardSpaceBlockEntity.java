@@ -1,7 +1,9 @@
 package fr.lordfinn.steveparty.blocks.custom.boardspaces;
 
 import fr.lordfinn.steveparty.advancement.PartyAdvancements;
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.entities.TokenizedEntityInterface;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.behaviors.ABoardSpaceBehavior;
 import fr.lordfinn.steveparty.board.BoardPerf;
@@ -644,6 +646,8 @@ public class BoardSpaceBlockEntity extends CartridgeContainerBlockEntity impleme
             partyController.nextStep();
             return;
         }
+        int role = BoardSpaceRedstoneRouterBlockEntity.landingLevel(this);
+        if (role > 0) partyController.ringMoment(PartyMoment.TOKEN_LANDS, role);
         PartyAdvancements.landed(token, this, behavior, partyController);
         fr.lordfinn.steveparty.blocks.custom.PartyController.PartyStatsCollector.landed(partyController, token, this);
         behavior.onDestinationReached(this.world, this.pos, token, this, partyController);

@@ -643,31 +643,35 @@ q("hud", 8.25, -0.5, C(), deps=["first_party"], rewards=T0(), optional=True, ico
 
 q("step", 4, -1.5, I("step_controller"), deps=["controller"], rewards=T2(),
   desc=(["A tape deck. Right-click a button on top: its mode. Previous · Replay · Next.",
-         "Next + a pulse: skips what the party waits for (a turn not rolled, a bell, the practice round); in a mini-game, ends it with the podiums' places.",
+         "Next + a pulse: skips what the party waits for (a turn not rolled, an antenna, the practice round); in a mini-game, ends it with the podiums' places.",
          "Replay + a pulse: the turn is undone and played again, or the round restarts. Previous: back to the turn before.",
          "Link it to any part of a game with the Tile Linker Brush; otherwise it drives the nearest party (64 blocks)."],
         ["Un magnétophone. Clic droit sur un bouton du dessus : son mode. Précédent · Rejouer · Suivant.",
-         "Suivant + une impulsion : passe ce que la partie attend (tour pas lancé, cloche, manche de chauffe) ; en mini-jeu, le termine avec les places des podiums.",
+         "Suivant + une impulsion : passe ce que la partie attend (tour pas lancé, antenne, manche de chauffe) ; en mini-jeu, le termine avec les places des podiums.",
          "Rejouer + une impulsion : le tour est annulé et rejoué, ou la manche recommence. Précédent : retour au tour d'avant.",
          "Lie-le au Pinceau lieur à un élément d'une partie ; sinon il pilote la partie la plus proche (64 blocs)."]))
 
 q("bell", 4, -4, I("party_bell"), deps=["controller"], rewards=T2(),
-  desc=(["Right-click: pick a moment (party start, turn start, die rolled, mini-game end...). It pulses then, and a comparator reads a value (die result, rank...).",
-         "Wait mode (Wrench): the party freezes until the bell gets a signal."],
-        ["Clic droit : choisis un moment (début de partie, de manche, de tour, dé lancé, fin de mini-jeu...). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...).",
-         "Mode attente (Clé à molette) : la partie se fige jusqu'à ce qu'elle reçoive un signal."]))
+  desc=(["Right-click it with the Wrench: every moment it can listen to, by family (party, turns, coins and stars, events, mini-games). It pulses then, and a comparator reads a value (die result, rank...).",
+         "Wait mode: the party freezes until the antenna gets a signal.",
+         "Link it with the Tile Linker Brush to any part of the game (the Party Controller, a space...): it listens to that party; not linked, it hears nothing."],
+        ["Clic droit avec la Clé à molette : tous les moments qu'elle peut écouter, par famille (partie, tours, pièces et étoiles, évènements, mini-jeux). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...).",
+         "Mode attente : la partie se fige jusqu'à ce qu'elle reçoive un signal.",
+         "Lie-la au Pinceau lieur à un élément d'une partie (le Contrôleur de Party, une case...) : elle écoute cette partie ; pas liée, elle n'entend rien."]))
 
 q("piggy", 4, -2.75, I("piggy_bank"), deps=["controller", "board.inventory"], rewards=T2(),
   desc=(["A ceramic pig with an Inventory Cartridge. Each pulse gives (or takes) its items: player of the turn, mini-game winners, everyone or the nearest.",
-         "All-or-nothing mode: sell a Party Star for Coins."],
+         "All-or-nothing mode: sell a Party Star for Coins.",
+         "Link it to any part of a game with the Tile Linker Brush; otherwise it serves the nearest party (64 blocks)."],
         ["Un cochon en céramique avec une Cartouche Bonus / Malus. Chaque impulsion donne (ou prend) ses objets : joueur du tour, gagnants du mini-jeu, tout le monde ou le plus proche.",
-         "Mode tout ou rien : de quoi vendre une Party Star contre des Pièces."]))
+         "Mode tout ou rien : de quoi vendre une Party Star contre des Pièces.",
+         "Lie-la au Pinceau lieur à un élément d'une partie ; sinon elle sert la partie la plus proche (64 blocs)."]))
 
 CARDS = [
     ("turns", "blue", ["Every pawn plays once."], ["Chaque pion joue une fois."]),
     ("minigame", "lime", ["One mini-game from the catalogue."], ["Un mini-jeu du catalogue."]),
-    ("event", "orange", ["Rings the Party Bells set to Event; the channel is the stack size."],
-     ["Fait sonner les Cloches réglées sur Évènement ; le canal est la taille de la pile."]),
+    ("event", "orange", ["Pings the Party Antennas set to Event; the channel is the stack size."],
+     ["Fait capter les Antennes de Party réglées sur Évènement ; le canal est la taille de la pile."]),
     ("sequence_start", "pink", ["The next Repeat card starts again from here."],
      ["La carte Répéter suivante reprend d'ici."]),
     ("repeat", "purple", ["Plays the cards since the last Sequence Start again, as many times as cards in its stack."],

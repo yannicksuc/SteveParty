@@ -5,10 +5,10 @@ import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
+import fr.lordfinn.steveparty.board.LinkedParty;
+import fr.lordfinn.steveparty.board.PartyLink;
+import fr.lordfinn.steveparty.board.PartyLinked;
 import fr.lordfinn.steveparty.minigame.MiniGamePages;
-import fr.lordfinn.steveparty.minigame.MiniGamePagesState;
-import fr.lordfinn.steveparty.minigame.MiniGamePipes;
 import fr.lordfinn.steveparty.minigame.MiniGameSession;
 import fr.lordfinn.steveparty.minigame.PartyMiniGameSession;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
@@ -18,15 +18,12 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +44,7 @@ import java.util.UUID;
  * pulse that can't act shakes it, with the dispenser's fail click. What it drives:
  * <ul>
  *     <li>linked with the Tile Linker Brush to an element of a party ({@link #getLink}, see
- *     {@link fr.lordfinn.steveparty.board.StepControllerLinks}): a board space or any block of a board (its board's
+ *     {@link fr.lordfinn.steveparty.board.PartyLinks}): a board space or any block of a board (its board's
  *     party), the Party Controller (its party), a Mini-game Controller, a podium, a goal pole base or a pipe of a page
  *     (the mini-game of that page, played by a party or as a test), however far and in whatever dimension;</li>
  *     <li>else, linked to mini-game pages (page in hand, click: see {@code Podiums#clickLink}, the links kept by the
@@ -57,7 +54,7 @@ import java.util.UUID;
  * A comparator reads the phase of the party it drives (see {@link PartyControllerEntity#getPhase}; a test of its
  * mini-game: the mini-game phase), 0 for none.
  */
-public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoBlockEntity, TickableBlockEntity {
+public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoBlockEntity, TickableBlockEntity, PartyLinked {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     /** The animations played on a pulse (see {@link #triggerAnim}), in the controller {@value #ACTION}. */
     public static final String ACTION = "action", REFUSED = "refused";
@@ -71,7 +68,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     private StepPulse.Mode mode = StepPulse.Mode.NEXT;
     private boolean wasPowered = false;
     /** The party element it drives (Tile Linker Brush), null for none. */
-    private @Nullable GlobalPos link;
+    private final PartyLink link = new PartyLink(this, this::syncToClients);
     /** The pages it is linked to, as the pages say (checked again every second): what the clients show. */
     private List<UUID> linkedPages = List.of();
     /** The comparator output, checked again every second. */
@@ -88,10 +85,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         nbt.putInt("mode", mode.ordinal());
         nbt.putBoolean("wasPowered", wasPowered);
-        if (link != null) {
-            nbt.putString("LinkDimension", link.dimension().getValue().toString());
-            nbt.putLong("LinkPos", link.pos().asLong());
-        }
+        link.write(nbt);
         if (!linkedPages.isEmpty()) {
             NbtList pages = new NbtList();
             linkedPages.forEach(page -> pages.add(NbtHelper.fromUuid(page)));
@@ -105,8 +99,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         super.readNbt(nbt, wrapper);
         mode = StepPulse.Mode.of(nbt.getInt("mode"));
         wasPowered = nbt.getBoolean("wasPowered");
-        Identifier dimension = nbt.contains("LinkPos") ? Identifier.tryParse(nbt.getString("LinkDimension")) : null;
-        link = dimension == null ? null : GlobalPos.create(RegistryKey.of(RegistryKeys.WORLD, dimension), BlockPos.fromLong(nbt.getLong("LinkPos")));
+        link.read(nbt);
         List<UUID> pages = new ArrayList<>();
         for (NbtElement element : nbt.getList("LinkedPages", NbtElement.INT_ARRAY_TYPE)) pages.add(NbtHelper.toUuid(element));
         linkedPages = List.copyOf(pages);
@@ -138,14 +131,17 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
 
     /** The party element it drives (Tile Linker Brush), null for none. */
     public @Nullable GlobalPos getLink() {
-        return link;
+        return link.get();
     }
 
     /** Links it to a party element (null: none), told to the clients (the brush draws it). */
     public void setLink(@Nullable GlobalPos link) {
-        this.link = link;
-        markDirty();
-        syncToClients();
+        this.link.set(link);
+    }
+
+    @Override
+    public PartyLink partyLink() {
+        return link;
     }
 
     @Override
@@ -201,35 +197,17 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     /** @param load whether the chunk of its element may be loaded to find it out (a pulse), or not (its comparator) */
     private Driven driven(boolean load) {
         if (!(this.world instanceof ServerWorld serverWorld)) return Driven.NONE;
-        if (link != null) return element(serverWorld, link, load);
+        if (link.get() != null) return element(serverWorld, link.get(), load);
         List<UUID> pages = getLinkedPages();
         if (!pages.isEmpty()) return new Driven(null, pages);
         // « next » never acts on an ended party: only running ones are found
         return new Driven(PartyControllerEntity.getClosestSteppablePartyControllerEntity(serverWorld, this.pos, RANGE, false).orElse(null), List.of());
     }
 
-    /** What the element at {@code at} belongs to. */
+    /** What the element at {@code at} belongs to (see {@link LinkedParty}). */
     private static Driven element(ServerWorld here, GlobalPos at, boolean load) {
-        ServerWorld world = here.getServer().getWorld(at.dimension());
-        BlockPos pos = at.pos();
-        if (world == null || (!load && !world.isChunkLoaded(pos))) return Driven.NONE;
-        BlockEntity blockEntity = world.getBlockEntity(pos);
-        if (blockEntity instanceof PartyControllerEntity party) return new Driven(party, List.of());
-        if (blockEntity instanceof CartridgeContainerBlockEntity) {
-            return new Driven(PartyControllerEntity.getControllerOfBoardSpace(world, pos, PartyControllerEntity.BOARD_NEARBY_RADIUS).orElse(null), List.of());
-        }
-        if (blockEntity instanceof MiniGameControllerBlockEntity controller) {
-            UUID page = controller.getPageId();
-            return page == null ? Driven.NONE : new Driven(null, List.of(page));
-        }
-        BlockState state = world.getBlockState(pos);
-        if (state.getBlock() instanceof PodiumBlock) return new Driven(null, MiniGamePages.pageIdsAt(world, PodiumBlock.bottomOf(world, pos)));
-        if (MiniGamePipes.linkable(state)) {
-            List<UUID> pages = new ArrayList<>();
-            for (MiniGamePagesState.Linked linked : MiniGamePages.linksAt(world.getServer(), at)) pages.add(linked.page().id());
-            return new Driven(null, pages);
-        }
-        return new Driven(null, MiniGamePages.pageIdsAt(world, pos));
+        LinkedParty linked = LinkedParty.of(here, at, load);
+        return linked.party() == null && linked.pages().isEmpty() ? Driven.NONE : new Driven(linked.party(), linked.pages());
     }
 
     /** A redstone pulse: what it drives moves by its mode, shown by its button and reels (a shake: nothing could be done). */

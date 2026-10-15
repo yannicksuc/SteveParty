@@ -3,6 +3,9 @@ package fr.lordfinn.steveparty.gametest;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.PartyBellBlock;
+import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
@@ -42,6 +45,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
@@ -235,6 +239,27 @@ public class StarCartridgeGameTests implements SteveGameTest {
                 context.assertEquals(context.getAbsolutePos(STAR), controller.getStarSpace(), "on the active star space");
             }
             finish(context, List.of(STAR, OTHER), owner);
+        });
+    }
+
+    /** The star moving tells the Party Antennas listening to it: the number of its new space among the star spaces. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "star_cartridge_starMovesTellsTheAntennas")
+    public void starMovesTellsTheAntennas(TestContext context) {
+        withPlayer(context, owner -> {
+            Board board = board(context, owner, ModBlocks.TILE);
+            BlockPos antennaPos = new BlockPos(8, 1, 6);
+            context.setBlockState(antennaPos, ModBlocks.PARTY_BELL.getDefaultState()
+                    .with(PartyBellBlock.MOMENT, PartyMoment.STAR_MOVES));
+            PartyBellBlockEntity antenna = context.getBlockEntity(antennaPos);
+            antenna.setLink(GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(CONTROLLER)));
+            context.assertTrue(antenna.getHeardAt() < 0, "silent before");
+            BlockPos moved = PartyStars.place(board.party(), context.getWorld(), context.getAbsolutePos(STAR));
+            context.assertTrue(moved != null && !moved.equals(context.getAbsolutePos(STAR)), "the star moved, got " + moved);
+            int index = PartyStars.activeStarSpaces(context.getWorld(), board.party()).indexOf(moved) + 1;
+            context.assertTrue(antenna.getHeardAt() >= 0 && antenna.getHeardValue() == index && index >= 1,
+                    "heard its new space " + index + ", got " + antenna.getHeardValue());
+            context.setBlockState(antennaPos, Blocks.AIR);
+            finish(context, board.starSpaces(), owner);
         });
     }
 

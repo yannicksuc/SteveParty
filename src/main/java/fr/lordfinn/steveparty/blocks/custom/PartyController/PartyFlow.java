@@ -117,7 +117,9 @@ final class PartyFlow {
         collectTransitionMoments(from, to, target, moments, values);
         // The index first: the bells listen to started parties (or parties standing on their end)
         partyData.setStepIndex(target);
-        if (moments.stream().anyMatch(moment -> PartyBellBlockEntity.hasWaitingBell(controller, moment))) {
+        boolean waits = false;
+        for (int i = 0; i < moments.size(); i++) waits |= PartyBellBlockEntity.hasWaitingBell(controller, moments.get(i), values.get(i));
+        if (waits) {
             steps.add(target, EventPartyStep.transition(moments, values));
         } else {
             for (int i = 0; i < moments.size(); i++)
@@ -135,6 +137,9 @@ final class PartyFlow {
         } else if (from instanceof MiniGamePartyStep miniGame) {
             moments.add(PartyMoment.MINIGAME_END);
             values.add(miniGame.getWinners().size());
+        } else if (from instanceof EventPartyStep event && !event.isTransition()) {
+            moments.add(PartyMoment.EVENT_OVER);
+            values.add(event.getChannel());
         }
         if (to == null) return;
         if (from == null && target == 0) {
@@ -145,6 +150,11 @@ final class PartyFlow {
             if (partyData.isRoundStart(target)) {
                 moments.add(PartyMoment.ROUND_START);
                 values.add(partyData.getRoundAt(target));
+                int left = roundsLeft(target);
+                if (left >= 1 && left <= FINAL_ROUNDS) {
+                    moments.add(PartyMoment.FINAL_ROUNDS);
+                    values.add(left);
+                }
             }
             moments.add(PartyMoment.TURN_START);
             values.add(partyData.getTokenRank(turn.getTokenUUID()));
@@ -154,11 +164,32 @@ final class PartyFlow {
         }
     }
 
+    /** The last rounds are told to the antennas (moment {@link PartyMoment#FINAL_ROUNDS}): this many. */
+    static final int FINAL_ROUNDS = 3;
+
+    /**
+     * The rounds left from the round starting at {@code index}, this one included: counted live, the end rules may cut
+     * the program or add a turn.
+     */
+    private int roundsLeft(int index) {
+        PartyData partyData = data();
+        List<PartyStep> steps = partyData.getSteps();
+        int last = steps.size() - 1;
+        for (int i = index; i < steps.size(); i++) {
+            if (steps.get(i).getType() == PartyStepType.END) {
+                last = i;
+                break;
+            }
+        }
+        return partyData.getRoundAt(last) - partyData.getRoundAt(index) + 1;
+    }
+
     /** See {@link PartyControllerEntity#releaseMoment}. */
     boolean releaseMoment(PartyMoment moment) {
         PartyStep currentStep = data().getCurrentStep();
         if (currentStep == null || currentStep.getStatus() != PartyStep.Status.IN_PROGRESS) return false;
         if (!currentStep.onMomentReleased(moment, controller)) return false;
+        PartyBellBlockEntity.released(controller, moment);
         controller.markDirty();
         controller.sendPacketToInterestedPlayers();
         return true;
