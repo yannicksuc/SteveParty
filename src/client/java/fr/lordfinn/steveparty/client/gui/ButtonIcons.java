@@ -19,7 +19,9 @@ public final class ButtonIcons {
     /** In the sheet's order (the GUI kit's). */
     public enum Icon {
         MINUS, PLUS, LESS, LESS_OR_EQUAL, EQUAL, GREATER_OR_EQUAL, GREATER, ANY, PLAY, BACK, UP, DOWN, PREV, NEXT, CROSS, CHECK,
-        TRASH, LOCK, STAR, SAVE, UNDO, REDO, INFO(true), HOURGLASS(true), HOURGLASS_OFF(true);
+        TRASH, LOCK, STAR, SAVE, UNDO, REDO, INFO(true), HOURGLASS(true), HOURGLASS_OFF(true),
+        // added after the first sheet: always at the end, a cell never moves
+        STOP;
 
         private final boolean coloured;
 
