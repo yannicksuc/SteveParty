@@ -410,9 +410,9 @@ public class SpawnMarkerGameTests implements SteveGameTest {
     }
 
     /**
-     * A kind of Cartridge picked on the brush goes in the spaces a path is painted between, never in a space whose
+     * A kind of Cartridge picked on the brush goes in the space a path is painted from, never in a space whose
      * Spawn Marker a stroke links or fails to link: a Trichaudron space linked to its marker keeps its cartridge (it is
-     * not « turned normal », then refused); the cartridges a path replaces are given back.
+     * not « turned normal », then refused), as it does when a path reaches it; the cartridge replaced is given back.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aPickedCartridgeNeverReplacesTheSpaceLinkingAMarker(TestContext context) {
@@ -431,13 +431,14 @@ public class SpawnMarkerGameTests implements SteveGameTest {
             paint(player, brush, context, next.getPos(), marker);
             context.assertTrue(next.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "a refused link changes nothing");
             context.assertEquals(player.getInventory().getStack(10).getCount(), 2, "still no stop cartridge spent");
-            // a path painted: both spaces get the picked kind, theirs given back
+            // a path painted: the space it starts from gets the picked kind, its own given back; the one it reaches keeps its own
             paint(player, brush, context, next.getPos(), mob.getPos());
-            context.assertTrue(next.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP)
-                    && mob.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "a path: the picked kind on both");
+            context.assertTrue(next.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "a path: the picked kind on its start");
+            context.assertTrue(mob.getStack(0).isOf(ModItems.TRICHAUDRON_CARTRIDGE), "the space it reaches untouched");
             context.assertEquals(BoardLinks.links(next.getStack(0)), List.of(mob.getPos()), "the path painted");
+            context.assertEquals(player.getInventory().getStack(10).getCount(), 1, "one stop cartridge spent");
             context.assertTrue(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR) == 1
-                    && player.getInventory().count(ModItems.TRICHAUDRON_CARTRIDGE) == 1, "theirs given back, none lost");
+                    && player.getInventory().count(ModItems.TRICHAUDRON_CARTRIDGE) == 0, "the plain one given back, none lost");
         });
     }
 

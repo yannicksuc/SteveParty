@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.minigame.MiniGamePodiumLink;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.components.BlockOriginComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.TeleportCartridgeItem;
@@ -19,6 +20,7 @@ import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKey;
@@ -50,9 +52,14 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, PartyLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange, PageLinksChange, PipePageChange, EventPipesChange, RouterLinksChange {
+    public sealed interface Change permits LinksChange, CartridgeChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, PartyLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange, PageLinksChange, PipePageChange, EventPipesChange, RouterLinksChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
+
+        /** {@link #apply(ServerWorld, boolean)} undone or redone by {@code player} (whose history it is). */
+        default boolean apply(ServerWorld world, boolean undo, ServerPlayerEntity player) {
+            return apply(world, undo);
+        }
 
         /** The block it changes. */
         BlockPos pos();
@@ -68,6 +75,51 @@ public final class LinkHistory {
             if (!BoardLinks.links(held.cartridge()).equals(expected)) return false;
             BoardLinks.setLinks(held.cartridge(), undo ? before : after, world);
             held.sync().run();
+            return true;
+        }
+    }
+
+    /**
+     * The cartridge in {@code slot} of a board space swapped for another kind, or inserted ({@code before} empty), its
+     * links carried over. Out of creative, undo and redo exchange it with the player's inventory again (the one put
+     * back taken from it, the one taken out given back): never an item created nor lost; none in the inventory, skipped.
+     */
+    public record CartridgeChange(BlockPos pos, int slot, ItemStack before, ItemStack after, boolean creative) implements Change {
+        public CartridgeChange {
+            before = before.isEmpty() ? ItemStack.EMPTY : before.copyWithCount(1);
+            after = after.isEmpty() ? ItemStack.EMPTY : after.copyWithCount(1);
+        }
+
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            return false;
+        }
+
+        @Override
+        public boolean apply(ServerWorld world, boolean undo, ServerPlayerEntity player) {
+            if (!(BoardLinks.container(world, pos) instanceof CartridgeContainerBlockEntity container) || slot >= container.size()) return false;
+            ItemStack from = undo ? after : before, to = undo ? before : after;
+            ItemStack current = container.getStack(slot);
+            if (from.isEmpty() ? !current.isEmpty() : !current.isOf(from.getItem())) return false;
+            List<BlockPos> links = current.isEmpty() ? List.of() : List.copyOf(BoardLinks.links(current));
+            // Taken out of the space: its links would be lost with it
+            if (to.isEmpty() && !links.isEmpty()) return false;
+            if (!creative && !to.isEmpty()) {
+                PlayerInventory inventory = player.getInventory();
+                int found = -1;
+                for (int i = 0; i < inventory.size() && found < 0; i++) if (inventory.getStack(i).isOf(to.getItem())) found = i;
+                if (found < 0) return false;
+                inventory.getStack(found).decrement(1);
+            }
+            ItemStack placed = to.isEmpty() ? ItemStack.EMPTY : to.copy();
+            if (!placed.isEmpty()) BoardLinks.setLinks(placed, links, world);
+            ItemStack removed = container.removeStack(slot);
+            container.setStack(slot, placed);
+            BoardLinks.sync(container);
+            if (!creative && !removed.isEmpty()) {
+                removed.remove(ModComponents.DESTINATIONS_COMPONENT); // its links stay with the space
+                player.getInventory().offerOrDrop(removed);
+            }
             return true;
         }
     }
@@ -352,7 +404,7 @@ public final class LinkHistory {
         List<Change> changes = new ArrayList<>(action.changes());
         if (undo) Collections.reverse(changes);
         for (Change change : changes) {
-            if (!world.canPlayerModifyAt(player, change.pos()) || !change.apply(world, undo)) skipped++;
+            if (!world.canPlayerModifyAt(player, change.pos()) || !change.apply(world, undo, player)) skipped++;
         }
         ToolSnapshot snapshot = undo ? action.toolBefore() : action.toolAfter();
         if (tool != null && snapshot != null && world == player.getWorld()) snapshot.restore(tool);

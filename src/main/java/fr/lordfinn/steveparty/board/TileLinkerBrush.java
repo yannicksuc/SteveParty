@@ -54,9 +54,9 @@ import java.util.UUID;
  * {@link WrenchActions#initialize}), and with the brush in the off hand, each placed board space is linked from it.
  * <p>
  * Its settings are picked on its wheel (left click, client side): the level (0-15, the slot the redstone power selects
- * on a 16-slot board space; none: the slot powered at the time), the kind of Cartridge the board spaces a painted path
- * reaches get (theirs swapped for it, links kept; never the space a stroke starts from; none picked: they keep theirs,
- * an empty one gets a plain Cartridge), undo and
+ * on a 16-slot board space; none: the slot powered at the time), the kind of Cartridge a board space gets once a new
+ * path is painted from it (theirs swapped for it, links kept; never the space the path reaches; none picked: they keep
+ * theirs, an empty one gets a plain Cartridge), undo and
  * redo. A board space with a single slot ignores the level.
  */
 public final class TileLinkerBrush {
@@ -78,12 +78,6 @@ public final class TileLinkerBrush {
         /** The cells blobbed or whose ghost was erased in this stroke: neither erased nor blobbed again before it ends. */
         final Set<BlockPos> cells = new HashSet<>();
         Set<BlockPos> ghosts = Set.of();
-        /**
-         * The board space the stroke started on, while nothing was linked from it yet: it gets the picked kind of
-         * Cartridge once a path is painted from it, or when the stroke ends on it alone; never after linking (or failing
-         * to link) its Spawn Marker or a chest.
-         */
-        @Nullable BlockPos start;
     }
 
     private static final Map<UUID, Stroke> STROKES = ServerMemory.forgetOnStop(new HashMap<>());
@@ -132,8 +126,8 @@ public final class TileLinkerBrush {
     }
 
     /**
-     * The kind of Cartridge picked on the wheel: the board spaces a painted path reaches get one of it instead of theirs (taken from the
-     * inventory, theirs given back). Null: none picked, the board spaces keep their cartridge (an empty one gets a plain
+     * The kind of Cartridge picked on the wheel: a board space a new path is painted from gets one of it instead of its
+     * own (taken from the inventory, its own given back). Null: none picked, the board spaces keep their cartridge (an empty one gets a plain
      * Cartridge).
      */
     public static @Nullable Item cartridge(ItemStack brush) {
@@ -196,11 +190,7 @@ public final class TileLinkerBrush {
 
     /** Ends the stroke of {@code player} (the next use starts a new one). */
     public static void endStroke(ServerPlayerEntity player) {
-        Stroke stroke = STROKES.remove(player.getUuid());
-        // A space only touched: it gets the picked kind of Cartridge
-        if (stroke != null && stroke.start != null && isBrush(player.getMainHandStack())) {
-            giveCartridge(player, player.getMainHandStack(), player.getServerWorld(), stroke.start);
-        }
+        STROKES.remove(player.getUuid());
     }
 
     /** Paints every board space (or ghost) the look crossed since the last tick, in order; the one aimed now, or null. */
@@ -254,7 +244,6 @@ public final class TileLinkerBrush {
         if (fromKind instanceof ControllerStartLinks.Starts || fromKind instanceof ControllerEndLinks.Arrivals) {
             // From a Party Controller to its start tiles: each once a stroke, the stroke goes on from the controller
             if (!stroke.cells.add(pos.toImmutable())) return;
-            stroke.start = null;
             WrenchActions.recorded(player, world, brush, () -> link(player, brush, world, from, pos));
             return;
         }
@@ -264,10 +253,8 @@ public final class TileLinkerBrush {
         stroke.last = pos.toImmutable();
         BrushLinks.Held origin = from == null ? null : BrushLinks.holder(world, from, level(brush));
         if (origin == null) {
-            // The first holder of a stroke: only the brush touching it (nothing selected, nothing said); its cartridge
-            // waits to know what the stroke links from it
+            // The first holder of a stroke: only the brush touching it (nothing selected, nothing said, nothing changed)
             setAnchor(brush, world, pos);
-            stroke.start = pos.toImmutable();
             // A Party Controller shows its start tiles
             ControllerStartLinks.show(world, pos);
             world.playSound(null, player.getBlockPos(), SoundEvents.ITEM_BRUSH_BRUSHING_GENERIC, SoundCategory.PLAYERS, 0.5f, 1.2f);
@@ -275,26 +262,24 @@ public final class TileLinkerBrush {
         }
         // Into a start tile: refused (its links only go out of it), the stroke goes on from it
         if (fromKind == null && WrenchActions.intoStart(world, from, pos)) {
-            stroke.start = null;
             WrenchActions.refuseIntoStart(player);
             return;
         }
         // From a Teleport tile to a board space it has no link to: « TP » or « link », the player picks
         if (teleportChoice(world, level(brush), from, pos) != null) {
-            stroke.start = null;
             BrushLinks.Held held = BrushLinks.holder(world, from, POWERED);
             if (held != null && !held.canEdit(player)) cannotEdit(player, from);
             else askTeleportOrLink(player, world, from, pos);
             return;
         }
-        if (isPath(world, brush, from, pos)) {
-            if (from.equals(stroke.start)) giveCartridge(player, brush, world, from);
-            giveCartridge(player, brush, world, pos);
-        }
-        stroke.start = null;
+        boolean path = isPath(world, brush, from, pos);
         WrenchActions.recorded(player, world, brush, () -> {
             setAnchor(brush, world, pos);
+            boolean linked = path && pathLinked(world, brush, from, pos);
             link(player, brush, world, from, pos);
+            // A new path painted: the space it starts from gets the picked kind of Cartridge (never the one it reaches)
+            if (path && !linked && pathLinked(world, brush, from, pos))
+                WrenchActions.keepingLabel(player, () -> giveCartridge(player, brush, world, from));
         });
     }
 
@@ -356,11 +341,18 @@ public final class TileLinkerBrush {
         return BrushLinks.kindFor(BrushLinks.of(world, from, level(brush)), world, to) instanceof CartridgeLinks.BoardPaths;
     }
 
+    /** Whether the board space at {@code from} has a path to {@code to} in the slot of the brush's level. */
+    private static boolean pathLinked(World world, ItemStack brush, BlockPos from, BlockPos to) {
+        CartridgeContainerBlockEntity origin = BoardLinks.container(world, from);
+        return origin != null && BoardLinks.links(origin, BoardLinks.slotOf(origin, level(brush))).contains(to);
+    }
+
     /**
      * A kind of Cartridge picked on the wheel: the board space at {@code pos} gets one in the slot of the brush's level
-     * (links kept, its own given back, see {@link WrenchActions#swapCartridge}). Given to the spaces a path is painted
-     * between, and to the space a stroke only touched; never to a space whose Spawn Marker or chests a stroke links (or
-     * fails to), nor to one reached as a container: a mob, shop or chest space keeps its role.
+     * (links kept, its own given back, see {@link WrenchActions#swapCartridge}), in the action being recorded (undone
+     * with its link). Given to a space once a new path is painted from it, and only then: never to the space the path
+     * reaches, to a space only touched, nor to one whose Spawn Marker or chests a stroke links (or fails to): a mob,
+     * shop or chest space keeps its role.
      */
     private static void giveCartridge(ServerPlayerEntity player, ItemStack brush, ServerWorld world, BlockPos pos) {
         if (cartridge(brush) == null || !(BoardLinks.container(world, pos) instanceof BoardSpaceBlockEntity target)) return;
@@ -399,8 +391,6 @@ public final class TileLinkerBrush {
         BlockPos from = stroke.last;
         if (from == null || stroke.cells.contains(pos)) return;
         BrushLinkable kind = BrushLinks.kindFor(BrushLinks.of(world, from, level(brush)), world, pos);
-        // Its marker or a chest reached (or refused): the space the stroke started on keeps its cartridge
-        if (kind != null && !(kind instanceof CartridgeLinks.BoardPaths)) stroke.start = null;
         if (kind == null && MiniGameControllerLinks.emptyController(world, from)) {
             stroke.cells.add(pos.toImmutable());
             WrenchActions.warn(player, Text.translatable("message.steveparty.tile_linker_brush.controller_no_page", BoardText.pos(from)));
@@ -410,7 +400,6 @@ public final class TileLinkerBrush {
             // A chest or a Spawn Marker the cartridge takes none of: said, once a stroke
             String refusal = BrushLinks.refusal(world, from, level(brush), pos);
             if (refusal != null) {
-                stroke.start = null;
                 stroke.cells.add(pos.toImmutable());
                 WrenchActions.warn(player, Text.translatable(refusal, BoardText.pos(from), BoardText.pos(pos)));
             }
@@ -451,13 +440,10 @@ public final class TileLinkerBrush {
         int slot = BoardLinks.slotOf(origin, level(brush));
         if (cell.equals(from) || stroke.cells.contains(cell) || BoardLinks.links(origin, slot).contains(cell)) return;
         stroke.cells.add(cell);
-        // A path planned from the space the stroke started on: it gets the picked kind of Cartridge
-        if (from.equals(stroke.start)) {
-            stroke.start = null;
-            giveCartridge(player, brush, world, from);
-        }
         WrenchActions.recorded(player, world, brush, () -> {
             if (!WrenchActions.addLink(player, world, from, origin, slot, cell)) return;
+            // A path planned: the space it starts from gets the picked kind of Cartridge
+            giveCartridge(player, brush, world, from);
             BrushTutorialSteps.pathLinked(player, world, from);
             WrenchActions.say(player, Text.translatable("message.steveparty.tile_linker_brush.blob", BoardText.pos(from), BoardText.pos(cell)), WrenchActions.linkWord(true));
             world.playSound(null, surface.getBlockPos(), SoundEvents.ENTITY_SLIME_SQUISH, SoundCategory.PLAYERS, 0.7f, 0.8f);
