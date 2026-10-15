@@ -225,7 +225,7 @@ public final class DiceRollEffects {
         clearMoveModules(id);
         Optional<PartyControllerEntity> party = PartyControllerEntity.getRunningPartyOf(id);
         if (party.isPresent()) party.get().endTurnOf(id);
-        else PartyControllerEntity.onFreeTokenArrived(world, token);
+        else PartyControllerEntity.onFreeTokenArrived(world, token, null);
     }
 
     // ---------------------------------------------------------------- coins

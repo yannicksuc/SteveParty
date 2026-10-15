@@ -183,7 +183,7 @@ public class TokenMovementService {
         endMoveIfForcedStop(mob, boardSpace);
         AdvanceBackMoves.onArrived(mob, boardSpace.getPos());
         if (token.steveparty$getNbSteps() == 0 && mob.getWorld() instanceof ServerWorld serverWorld)
-            PartyControllerEntity.onFreeTokenArrived(serverWorld, mob);
+            PartyControllerEntity.onFreeTokenArrived(serverWorld, mob, boardSpace);
         TileReachedEvent.EVENT.invoker().onTileReached(mob, boardSpace);
         AdvanceBackMoves.afterArrival(mob);
         // The move is over: the modules of its die no longer apply, its player no longer sees where it is heading
