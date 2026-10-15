@@ -75,8 +75,9 @@ public final class WrenchCopy {
             sound(player, ModSounds.CANCEL_SOUND_EVENT, 0.8f);
             return false;
         }
-        wrench.set(ModComponents.WRENCH_COPY, new WrenchCopyComponent(Registries.BLOCK.getId(block), kind.family(), settings));
-        player.sendMessage(Text.translatable("message.steveparty.wrench.copy.copied", name(block)), true);
+        Text label = kind.label(block, settings, world.getRegistryManager());
+        wrench.set(ModComponents.WRENCH_COPY, new WrenchCopyComponent(Registries.BLOCK.getId(block), kind.family(), settings, label));
+        player.sendMessage(Text.translatable("message.steveparty.wrench.copy.copied", keyed(label)), true);
         sound(player, SoundEvents.ITEM_BUNDLE_INSERT, 1.0f);
         return true;
     }
@@ -91,7 +92,6 @@ public final class WrenchCopy {
         }
         BlockSettings.Pasted pasted = kind.paste(new BlockSettings.Paste(player, world, pos, held.block(), held.settings(),
                 player.getAbilities().creativeMode));
-        Block block = world.getBlockState(pos).getBlock();
         if (pasted.refusal() != null) {
             WrenchActions.warn(player, pasted.refusal(), true);
             sound(player, ModSounds.CANCEL_SOUND_EVENT, 0.8f);
@@ -102,10 +102,10 @@ public final class WrenchCopy {
             if (pasted.changed()) sound(player, ModSounds.SELECT_SOUND_EVENT, 1.7f);
             else sound(player, ModSounds.CANCEL_SOUND_EVENT, 0.8f);
         } else if (pasted.changed()) {
-            player.sendMessage(Text.translatable("message.steveparty.wrench.copy.pasted", name(block)), true);
+            player.sendMessage(Text.translatable("message.steveparty.wrench.copy.pasted", keyed(held.label())), true);
             sound(player, ModSounds.SELECT_SOUND_EVENT, 1.7f);
         } else {
-            player.sendMessage(Text.translatable("message.steveparty.wrench.copy.same").formatted(Formatting.GRAY), true);
+            player.sendMessage(Text.translatable("message.steveparty.wrench.copy.same", keyed(held.label())), true);
         }
         return pasted;
     }
@@ -119,14 +119,14 @@ public final class WrenchCopy {
         return true;
     }
 
-    /** The name of the block the settings held by {@code wrench} come from (its tooltip), null if it holds none. */
+    /** What the settings held by {@code wrench} are (its tooltip), null if it holds none. */
     public static @Nullable MutableText heldName(ItemStack wrench) {
         WrenchCopyComponent held = wrench.get(ModComponents.WRENCH_COPY);
-        return held == null ? null : name(Registries.BLOCK.get(held.block()));
+        return held == null ? null : keyed(held.label());
     }
 
-    private static MutableText name(Block block) {
-        return block.getName().copy().withColor(KEY_COLOR);
+    private static MutableText keyed(Text label) {
+        return label.copy().withColor(KEY_COLOR);
     }
 
     private static void sound(ServerPlayerEntity player, SoundEvent sound, float pitch) {

@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
@@ -24,6 +25,8 @@ import net.minecraft.util.math.MathHelper;
 public class SpawnMarkerScreen extends Screen {
     private static final int PANEL_W = 220, PAD = 12;
     private static final String K = "gui.steveparty.spawn_marker.";
+    /** The facing dials (gui/sprites/spawn_marker/facing_N, 13 px): N from the north, clockwise by sixteenths of a turn. */
+    private static final int DIAL = 13;
 
     private final BlockPos pos;
     private boolean resident;
@@ -71,9 +74,9 @@ public class SpawnMarkerScreen extends Screen {
         addDrawableChild(new PartyButton(right - 20, liftY, 20, 20, Text.literal("+"), b -> step(1)))
                 .setTooltip(Tooltip.of(Text.translatable(K + "lift.hint")));
         turnY = liftY + 20 + (liftRow - 20) / 2 + 6 + (turnRow - 20) / 2;
-        addDrawableChild(new PartyButton(right - 70, turnY, 20, 20, Text.literal("↺"), b -> turn(-1)))
+        addDrawableChild(new PartyButton(right - 70, turnY, 20, 20, Text.literal("<"), b -> turn(-1)))
                 .setTooltip(Tooltip.of(Text.translatable(K + "turn.left")));
-        addDrawableChild(new PartyButton(right - 20, turnY, 20, 20, Text.literal("↻"), b -> turn(1)))
+        addDrawableChild(new PartyButton(right - 20, turnY, 20, 20, Text.literal(">"), b -> turn(1)))
                 .setTooltip(Tooltip.of(Text.translatable(K + "turn.right")));
         refresh();
     }
@@ -149,12 +152,15 @@ public class SpawnMarkerScreen extends Screen {
         UiText.centered(context, textRenderer, value, centre - 13, liftY + 6, 26, PartyGui.TEXT_DARK, false);
         UiText.wrapped(context, textRenderer, Text.translatable(K + "turn"), left + PAD, turnY + 10 - turnLabelHeight / 2,
                 liftLabelWidth(), PartyGui.TEXT_DARK, false);
+        // Where its mob looks, seen from above with the north up (its name on hover)
         PartyGui.inset(context, centre - 14, turnY, 28, 20, 0xFFFFFFFF, false, false);
-        Text facing = Text.translatable("message.steveparty.spawn_marker.facing." + SpawnMarkerBlock.compass(rotation));
-        UiText.centered(context, textRenderer, facing.getString(), centre - 13, turnY + 6, 26, PartyGui.TEXT_DARK, false);
+        // The block's rotation 0 faces south: the dial's index is that of SpawnMarkerBlock#compass
+        context.drawGuiTexture(Steveparty.id("spawn_marker/facing_" + ((rotation + 8) & 15)), centre - 7, turnY + 3, DIAL, DIAL);
         for (var child : children()) {
             if (child instanceof PartyButton button) button.render(context, mouseX, mouseY, delta);
         }
+        if (mouseX >= centre - 14 && mouseX < centre + 14 && mouseY >= turnY && mouseY < turnY + 20)
+            context.drawTooltip(textRenderer, Text.translatable(K + "facing." + SpawnMarkerBlock.compass(rotation)), mouseX, mouseY);
     }
 
     @Override

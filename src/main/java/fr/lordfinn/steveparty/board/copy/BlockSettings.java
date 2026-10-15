@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.board.copy;
 
 import fr.lordfinn.steveparty.screen_handlers.ScreenHandlerChecks;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
@@ -39,6 +40,11 @@ public interface BlockSettings {
 
     /** Its settings, null when it has nothing to copy ({@code creative}: its items count). */
     @Nullable NbtCompound write(ServerWorld world, BlockPos pos, RegistryWrapper.WrapperLookup registries, boolean creative);
+
+    /** What {@code settings} copied from {@code block} are, for the player (the block's name by default). */
+    default Text label(Block block, NbtCompound settings, RegistryWrapper.WrapperLookup registries) {
+        return block.getName();
+    }
 
     /** Pastes {@code paste}'s settings on the block at {@code paste.pos()}. */
     Pasted paste(Paste paste);

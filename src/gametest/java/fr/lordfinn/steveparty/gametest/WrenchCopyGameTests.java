@@ -118,6 +118,8 @@ public class WrenchCopyGameTests implements SteveGameTest {
             sneakClick(player, source);
             ItemStack wrench = player.getMainHandStack();
             context.assertTrue(wrench.contains(ModComponents.WRENCH_COPY), "copied into the Wrench");
+            context.assertTrue(wrench.get(ModComponents.WRENCH_COPY).label().getString().equals(new ItemStack(ModItems.SHOP_CARTRIDGE).getName().getString()),
+                    "shown as its cartridge");
             context.assertTrue(BoardLinks.links(tile(context, source).getStack(0)).equals(List.of(a)), "the source untouched");
 
             // An empty tile: nothing is created

@@ -126,6 +126,23 @@ public final class BlockSettingsKinds {
             return settings.isEmpty() ? null : settings;
         }
 
+        /**
+         * What a player sees of a tile: its cartridge (« Cartouche Boutique »), the block too when its own settings
+         * go along (« Interrupteur à saut (Cartouche) »); several kinds of cartridges: the block.
+         */
+        @Override
+        public Text label(Block block, NbtCompound settings, RegistryWrapper.WrapperLookup registries) {
+            List<Text> kinds = new ArrayList<>();
+            for (NbtElement element : settings.getList("Slots", NbtElement.COMPOUND_TYPE)) {
+                ItemStack cartridge = ItemStack.fromNbt(registries, ((NbtCompound) element).get("Cartridge")).orElse(ItemStack.EMPTY);
+                if (!cartridge.isEmpty() && kinds.stream().noneMatch(kind -> kind.getString().equals(cartridge.getName().getString())))
+                    kinds.add(cartridge.getName());
+            }
+            boolean own = settings.contains("Mode") || settings.contains("Target");
+            if (kinds.size() != 1) return block.getName();
+            return own ? Text.translatable("message.steveparty.wrench.copy.with", block.getName(), kinds.getFirst()) : kinds.getFirst();
+        }
+
         @Override
         public Pasted paste(Paste paste) {
             if (!(paste.world().getBlockEntity(paste.pos()) instanceof CartridgeContainerBlockEntity container)) return Pasted.of(false);
