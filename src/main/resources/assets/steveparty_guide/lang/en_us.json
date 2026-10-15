@@ -108,6 +108,8 @@
   "book.steveparty.guide.board.wrench.page1.text": "It also sets podiums, poles and bubbles, and breaks plastic in one hit.",
   "book.steveparty.guide.board.wrench.page2.text": "- [#](1C4E80)**Picker**[#](): copies a cartridge's destinations onto others\n- Another cartridge in off hand: swapped, links kept",
   "book.steveparty.guide.board.wrench.page2.title": "Picker and swaps",
+  "book.steveparty.guide.board.wrench.page3.text": "[#](9A6A00)Sneak + right-click[#]() a block: its settings are copied.\n- Then on a block of the same type: pasted\n- In the air: the Wrench is cleared\n- Settings only: no items, no links",
+  "book.steveparty.guide.board.wrench.page3.title": "Copy settings",
   "book.steveparty.guide.cartridges.advance_back.description": "Bonus steps, or a setback",
   "book.steveparty.guide.cartridges.advance_back.name": "Move Forward / Back",
   "book.steveparty.guide.cartridges.advance_back.page0.text": "A token ending here moves on 1 to 6 spaces:\\\n[#](23933C)**forward**[#]() or [#](E23C9A)**back**[#]().",

@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.items.tooltip.Tooltips;
 import fr.lordfinn.steveparty.blocks.switchable.Switchables;
 import fr.lordfinn.steveparty.board.WrenchActions;
+import fr.lordfinn.steveparty.board.copy.WrenchCopy;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
 import net.fabricmc.api.EnvType;
@@ -21,13 +22,15 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
 
 import java.util.List;
 
 /**
  * The Wrench (« Clé »): opens and works what is otherwise locked (board spaces and routers, the blocks that answer
- * only to it), opens the Party Controller's screen, and takes plastic apart in one hit. Links are painted with
+ * only to it), opens the Party Controller's screen, copies and pastes settings sneaking ({@link WrenchCopy}), and takes
+ * plastic apart in one hit. Links are painted with
  * the Tile Linker Brush. See {@link WrenchActions}.
  */
 public class WrenchItem extends AbstractDestinationsSelectorItem implements CartridgeContainerOpener {
@@ -53,13 +56,28 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
     @Override
     public ActionResult useOnBlock(ItemUsageContext context) {
         if (context.getHand() != Hand.MAIN_HAND || context.getPlayer() == null) return ActionResult.PASS;
-        // A Spawn Bubble, sneaking (the block itself gets the plain click): turned, the Wrench being its tool
+        // A Spawn Bubble (sneaking, the vanilla way to reach the item; a plain click is the block's): its menu
         BlockState clicked = context.getWorld().getBlockState(context.getBlockPos());
         if (clicked.getBlock() instanceof SpawnMarkerBlock)
             return SpawnMarkerBlock.wrench(clicked, context.getWorld(), context.getBlockPos(), context.getPlayer());
         if (context.getWorld().isClient) return ActionResult.SUCCESS;
         return WrenchActions.useOnBlock((ServerPlayerEntity) context.getPlayer(), context.getStack(),
                 (ServerWorld) context.getWorld(), context.getBlockPos());
+    }
+
+    /** Sneak + right click in the air: it forgets the settings it copied (see {@link WrenchCopy}). */
+    @Override
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+        ItemStack stack = user.getStackInHand(hand);
+        if (hand != Hand.MAIN_HAND || !user.isSneaking() || !stack.contains(ModComponents.WRENCH_COPY)) return super.use(world, user, hand);
+        if (user instanceof ServerPlayerEntity player) WrenchCopy.clear(player, stack);
+        return TypedActionResult.success(stack, world.isClient);
+    }
+
+    /** It shines while it holds settings. */
+    @Override
+    public boolean hasGlint(ItemStack stack) {
+        return stack.contains(ModComponents.WRENCH_COPY) || super.hasGlint(stack);
     }
 
     @Override
@@ -80,14 +98,16 @@ public class WrenchItem extends AbstractDestinationsSelectorItem implements Cart
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        Tooltips.of(tooltip)
-                .summary("tooltip.steveparty.wrench")
+        Tooltips tips = Tooltips.of(tooltip);
+        Text held = WrenchCopy.heldName(stack);
+        if (held != null) tips.state("tooltip.steveparty.wrench.copy", held);
+        tips.summary("tooltip.steveparty.wrench")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.wrench.controls.open")
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.wrench.controls.offhand")
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.wrench.controls.controller")
                         .use(Tooltips.Keys.use(), "tooltip.steveparty.wrench.controls.podium")
-                        .use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.wrench.controls.podium.reset")
+                        .use(Tooltips.Keys.sneakUse(), "tooltip.steveparty.wrench.controls.copy")
                         .use(Tooltips.Keys.attack(), "tooltip.steveparty.wrench.controls.plastic")
                         .note("tooltip.steveparty.wrench.links"));
     }

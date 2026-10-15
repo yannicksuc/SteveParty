@@ -257,6 +257,10 @@ public class ModComponents {
     public static final ComponentType<Integer> EVENT_SECONDS =
             registerComponent("event-seconds", com.mojang.serialization.Codec.INT);
 
+    /** The settings a Wrench copied from a block, to paste on others (see WrenchCopy). */
+    public static final ComponentType<WrenchCopyComponent> WRENCH_COPY =
+            registerComponent("wrench-copy", WrenchCopyComponent.CODEC);
+
     public static void initialize() {
         Steveparty.LOGGER.info("Registering {} components", Steveparty.MOD_ID);
         DiceFacesComponent.initialize();
