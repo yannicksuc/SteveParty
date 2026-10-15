@@ -6,10 +6,12 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.TexturedRenderLayers;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.model.BakedModel;
@@ -34,8 +36,11 @@ public final class AntennaIcons {
     public static final int PULSE = 32, WAIT = 33, FILTER_ANY = 34, FILTER_EQUAL = 35, FILTER_AT_LEAST = 36, FILTER_AT_MOST = 37,
             MINUS = 38, PLUS = 39, TEST = 40;
 
-    /** Its item, its badge (-1: none), and a size for an item drawn small in its own icon (the die). */
-    private record Icon(ItemConvertible item, int badge, float scale) {
+    /**
+     * Its item, its badge (-1: none), a size for an item drawn small in its own icon (the die), and whether it is lit
+     * flat (from the front: the Party Star's pale gold reads washed out under the side light of 3D models).
+     */
+    private record Icon(ItemConvertible item, int badge, float scale, boolean flat) {
     }
 
     private static final Map<PartyMoment, Icon> ICONS = new EnumMap<>(PartyMoment.class);
@@ -47,14 +52,14 @@ public final class AntennaIcons {
         put(PartyMoment.REWIND, ModBlocks.STEP_CONTROLLER, -1);
         put(PartyMoment.ROUND_START, ModItems.PARTY_CARD_TURNS, -1);
         put(PartyMoment.TURN_START, ModItems.FLAG, -1);
-        ICONS.put(PartyMoment.DICE_ROLLED, new Icon(ModItems.DEFAULT_DICE, -1, 1.5f));
+        ICONS.put(PartyMoment.DICE_ROLLED, new Icon(ModItems.DEFAULT_DICE, -1, 1.5f, false));
         put(PartyMoment.CROSSROADS, ModBlocks.BOARD_SPACE_REDSTONE_ROUTER, -1);
         put(PartyMoment.PATH_CHOSEN, Items.ARROW, -1);
         put(PartyMoment.TOKEN_LANDS, ModBlocks.TILE, -1);
         put(PartyMoment.TURN_END, ModItems.FLAG, BADGE_CHECK);
         put(PartyMoment.COINS_WON, ModItems.COIN, BADGE_PLUS);
         put(PartyMoment.COINS_LOST, ModItems.COIN, BADGE_MINUS);
-        put(PartyMoment.STAR_WON, ModItems.PARTY_STAR, BADGE_PLUS);
+        ICONS.put(PartyMoment.STAR_WON, new Icon(ModItems.PARTY_STAR, BADGE_PLUS, 1, true));
         put(PartyMoment.STAR_MOVES, ModItems.STAR_CARTRIDGE, -1);
         put(PartyMoment.NEW_LEADER, Items.GOLDEN_HELMET, -1);
         put(PartyMoment.EVENT, ModItems.EVENT_CARTRIDGE, -1);
@@ -66,7 +71,7 @@ public final class AntennaIcons {
     }
 
     private static void put(PartyMoment moment, ItemConvertible item, int badge) {
-        ICONS.put(moment, new Icon(item, badge, 1));
+        ICONS.put(moment, new Icon(item, badge, 1, false));
     }
 
     private AntennaIcons() {
@@ -77,8 +82,11 @@ public final class AntennaIcons {
         return ICONS.get(moment).scale();
     }
 
+    /** The moment's item, without its glint (drawn solid, a glint would be drawn into the same buffer). */
     public static ItemStack item(PartyMoment moment) {
-        return new ItemStack(ICONS.get(moment).item());
+        ItemStack stack = new ItemStack(ICONS.get(moment).item());
+        stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, false);
+        return stack;
     }
 
     /** Its badge's cell in the sheet, -1 for none. */
@@ -88,7 +96,8 @@ public final class AntennaIcons {
 
     /** The moment's item at ({@code x}, {@code y}), and its badge above it. */
     public static void drawMoment(DrawContext context, PartyMoment moment, int x, int y) {
-        drawSolid(context, item(moment), x, y, ICONS.get(moment).scale());
+        Icon icon = ICONS.get(moment);
+        drawSolid(context, item(moment), x, y, icon.scale(), icon.flat());
         int badge = ICONS.get(moment).badge();
         if (badge < 0) return;
         context.getMatrices().push();
@@ -98,10 +107,10 @@ public final class AntennaIcons {
     }
 
     /**
-     * An item as {@link DrawContext#drawItem} draws it, {@code scale} times its size, but solid: every layer of its
-     * model drawn cutout (the Party Star's translucent layer came out washed out on a coloured button).
+     * An item as {@link DrawContext#drawItem} draws it, {@code scale} times its size, but solid (its translucent layer
+     * drawn cutout: {@link #solid}), lit flat if {@code flat}.
      */
-    private static void drawSolid(DrawContext context, ItemStack stack, int x, int y, float scale) {
+    private static void drawSolid(DrawContext context, ItemStack stack, int x, int y, float scale, boolean flat) {
         MinecraftClient client = MinecraftClient.getInstance();
         BakedModel model = client.getItemRenderer().getModel(stack, client.world, client.player, 0);
         MatrixStack matrices = context.getMatrices();
@@ -109,15 +118,26 @@ public final class AntennaIcons {
         matrices.translate(x + 8, y + 8, 150);
         matrices.scale(16 * scale, -16 * scale, 16 * scale);
         context.draw();
-        boolean flat = !model.isSideLit();
-        if (flat) DiffuseLighting.disableGuiDepthLighting();
+        boolean front = flat || !model.isSideLit();
+        if (front) DiffuseLighting.disableGuiDepthLighting();
         VertexConsumerProvider consumers = context.getVertexConsumers();
         client.getItemRenderer().renderItem(stack, ModelTransformationMode.GUI, false, matrices,
-                layer -> consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), LightmapTextureManager.MAX_LIGHT_COORDINATE,
+                layer -> consumers.getBuffer(solid(layer)), LightmapTextureManager.MAX_LIGHT_COORDINATE,
                 OverlayTexture.DEFAULT_UV, model);
         context.draw();
-        if (flat) DiffuseLighting.enableGuiDepthLighting();
+        if (front) DiffuseLighting.enableGuiDepthLighting();
         matrices.pop();
+    }
+
+    /** The item atlas' translucent layers as cutout ones; any other layer (an item's own texture) as it is. */
+    public static RenderLayer solid(RenderLayer layer) {
+        return layer == TexturedRenderLayers.getItemEntityTranslucentCull() || layer == TexturedRenderLayers.getEntityTranslucentCull()
+                ? TexturedRenderLayers.getEntityCutout() : layer;
+    }
+
+    /** Whether the moment's item is lit flat (see {@link Icon}). */
+    public static boolean flat(PartyMoment moment) {
+        return ICONS.get(moment).flat();
     }
 
     /** A 16 x 16 cell of the sheet at ({@code x}, {@code y}). */

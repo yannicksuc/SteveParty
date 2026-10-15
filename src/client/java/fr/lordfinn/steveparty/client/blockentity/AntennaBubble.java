@@ -7,7 +7,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.TexturedRenderLayers;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
@@ -53,13 +52,13 @@ final class AntennaBubble {
         quad(plate, matrix, -HALF - 1, -HALF - 1, HALF + 1, HALF + 1, EDGE_Z, family);
         quad(plate, matrix, -HALF, -HALF, HALF, HALF, PLATE_Z, PLATE);
 
-        // The item, flattened onto the plate as in an inventory, solid (every layer cutout) and lit from above whichever
+        // The item, flattened onto the plate as in an inventory, solid (AntennaIcons.solid) and lit from above whichever
         // way the bubble turns: as bright as in the screen
         matrices.push();
         float size = ITEM * AntennaIcons.scale(moment);
         matrices.scale(size, -size, 0.01f);
         MinecraftClient.getInstance().getItemRenderer().renderItem(AntennaIcons.item(moment), ModelTransformationMode.GUI,
-                LIGHT, OverlayTexture.DEFAULT_UV, matrices, layer -> new LitFromAbove(consumers.getBuffer(TexturedRenderLayers.getEntityCutout())), antenna.getWorld(), 0);
+                LIGHT, OverlayTexture.DEFAULT_UV, matrices, layer -> new LitFromAbove(consumers.getBuffer(AntennaIcons.solid(layer))), antenna.getWorld(), 0);
         matrices.pop();
         int badge = AntennaIcons.badge(moment);
         if (badge >= 0) icon(consumers, matrix, badge, -HALF + 2, -HALF + 2, 16, 0.2f);
