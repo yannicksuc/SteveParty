@@ -422,6 +422,10 @@ public class StevepartyClient implements ClientModInitializer {
         TileStampTooltipComponent.register();
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
+        // The Party Antenna's head turns toward its Party Controller and lights on a moment: drawn by its renderer, as its item
+        BlockEntityRendererFactories.register(ModBlockEntities.PARTY_BELL_ENTITY, context -> new PartyAntennaRenderer());
+        BuiltinItemRendererRegistry.INSTANCE.register(ModBlocks.PARTY_BELL, PartyAntennaRenderer.ITEM);
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.PARTY_BELL, RenderLayer.getCutout());
         BlockEntityRendererFactories.register(ModBlockEntities.PARTY_CONTROLLER_ENTITY, PartyControllerInfinityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.EASEL_SIGN_ENTITY, StencilCanvasBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_CANVAS, StencilCanvasBlockEntityRenderer::new);
