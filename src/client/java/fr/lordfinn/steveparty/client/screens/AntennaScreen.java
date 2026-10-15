@@ -10,7 +10,6 @@ import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.payloads.custom.AntennaSettingsPayload;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -348,24 +347,15 @@ public class AntennaScreen extends Screen {
 
     /**
      * The hold toggle (the antenna always pulses; it may also hold the party): on, pressed in with its hourglass lit;
-     * off, up with its hourglass dimmed; greyed when the moment can't hold the party, or out of a party for a moment heard there.
+     * off, up with its hourglass out (grey sand); greyed when the moment can't hold the party, or out of a party for a moment heard there.
      */
     private void holdButton(DrawContext context, boolean on, boolean enabled, @Nullable Control hovered) {
         Control control = control("hold");
         int x = left + control.x(), y = top + control.y();
         boolean pressed = enabled && (on || control.id().equals(held));
         face(context, x, y, control.w(), control.h(), enabled ? CONTROL : DISABLED, pressed, enabled && hovered == control, !enabled);
-        // Off: its hourglass see-through on the face (whatever the face's shade, hovered or held)
-        boolean dim = enabled && !on;
-        if (dim) {
-            RenderSystem.enableBlend();
-            context.setShaderColor(1, 1, 1, 0.38f);
-        }
-        AntennaIcons.cell(context, AntennaIcons.WAIT, x + 2, y + 2);
-        if (dim) {
-            context.setShaderColor(1, 1, 1, 1);
-            RenderSystem.disableBlend();
-        }
+        // Off: its hourglass out (grey sand), opaque: the see-through look is for what can't be used
+        AntennaIcons.cell(context, enabled && !on ? AntennaIcons.WAIT_OFF : AntennaIcons.WAIT, x + 2, y + 2);
         if (!enabled) context.fill(x + 2, y + 2, x + control.w() - 2, y + control.h() - 2, 0x99C8CED4);
     }
 
@@ -382,12 +372,13 @@ public class AntennaScreen extends Screen {
 
     /**
      * A button's face in the mod's style (1 px rounded anthracite outline, bevels). Pressed in: darker and its bevels
-     * swapped; what is drawn on it stays where it is. Hovered: brighter.
+     * swapped; what is drawn on it stays where it is. Hovered: brighter. Disabled: flat.
      */
     private static void face(DrawContext context, int x, int y, int w, int h, int body, boolean pressed, boolean hovered, boolean disabled) {
         int colour = pressed ? Argb.darken(body, 0.12f) : hovered ? Argb.lighten(body, 0.3f) : body;
-        PartyGui.Theme theme = new PartyGui.Theme(OUTLINE, Argb.lighten(colour, disabled ? 0.2f : 0.5f), colour,
-                Argb.darken(colour, disabled ? 0.15f : 0.35f));
+        // Disabled: flat (no bevels), so that it never reads as up or pressed in
+        PartyGui.Theme theme = disabled ? new PartyGui.Theme(OUTLINE, colour, colour, colour)
+                : new PartyGui.Theme(OUTLINE, Argb.lighten(colour, 0.5f), colour, Argb.darken(colour, 0.35f));
         PartyGui.button(context, x, y, w, h, theme, pressed);
     }
 
