@@ -743,7 +743,7 @@ public final class CartridgePanel {
                         new PartyGui.Theme(Argb.darken(c, 0.6F), Argb.lighten(c, 0.4F), c, Argb.darken(c, 0.35F)), false);
             } else {
                 String text = optionTexts[i][o];
-                int color = !choice.enabled(current) ? 0xFF7A7A7A : selected ? 0xFF3B2600 : PartyGui.TEXT_DARK;
+                int color = !choice.enabled(current) ? PartyGui.DISABLED_INK : selected ? 0xFF3B2600 : PartyGui.TEXT_DARK;
                 // A fitted button is as wide as its text asks: never scrolled
                 if (choice.isFitted() && textRenderer.getWidth(text) + ChoiceModule.FITTED_PAD <= bw) ButtonGlyphs.text(context, textRenderer, text, bx, by, bw, bh, color);
                 else buttonText(context, text, bx, by, bw, bh, color);
@@ -838,7 +838,7 @@ public final class CartridgePanel {
     private void stepButton(DrawContext context, int bx, int top, String sign, boolean active, boolean hovered) {
         PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
         PartyGui.button(context, bx, top, STEP_W, NumberModule.ROW_H, theme, false);
-        int color = active ? PartyGui.TEXT_DARK : 0xFF7A7A7A;
+        int color = active ? PartyGui.TEXT_DARK : PartyGui.DISABLED_INK;
         if (sign.equals("+")) ButtonGlyphs.plus(context, bx, top, STEP_W, NumberModule.ROW_H, color);
         else ButtonGlyphs.minus(context, bx, top, STEP_W, NumberModule.ROW_H, color);
     }
@@ -1009,7 +1009,7 @@ public final class CartridgePanel {
         int bx = at[0], by = at[1], bw = at[2];
         PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
         PartyGui.button(context, bx, by, bw, EDIT_H, theme, false);
-        int color = active ? PartyGui.TEXT_DARK : 0xFF7A7A7A;
+        int color = active ? PartyGui.TEXT_DARK : PartyGui.DISABLED_INK;
         switch (part) {
             case E_MINUS -> ButtonGlyphs.minus(context, bx, by, bw, EDIT_H, color);
             case E_PLUS -> ButtonGlyphs.plus(context, bx, by, bw, EDIT_H, color);
@@ -1415,7 +1415,7 @@ public final class CartridgePanel {
         boolean hovered = active && HitArea.contains(mouseX, mouseY, bx, ry, ROW_BUTTON, ROW_BUTTON);
         PartyGui.Theme theme = active ? (hovered ? PartyGui.BUTTON.brighter() : PartyGui.BUTTON) : PartyGui.BUTTON_DISABLED;
         PartyGui.button(context, bx, ry, ROW_BUTTON, ROW_BUTTON, theme, false);
-        int color = active ? PartyGui.TEXT_DARK : 0xFF7A7A7A;
+        int color = active ? PartyGui.TEXT_DARK : PartyGui.DISABLED_INK;
         if (sign.equals("×")) ButtonGlyphs.cross(context, bx, ry, ROW_BUTTON, ROW_BUTTON, color);
         else ButtonGlyphs.left(context, bx, ry, ROW_BUTTON, ROW_BUTTON, color);
     }

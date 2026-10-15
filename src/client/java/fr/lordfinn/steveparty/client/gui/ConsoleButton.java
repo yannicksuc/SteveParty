@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.gui;
 
+import fr.lordfinn.steveparty.client.gui.cartridge.ButtonGlyphs;
 import fr.lordfinn.steveparty.client.gui.paint.Ramp;
 import fr.lordfinn.steveparty.utils.Argb;
 import net.minecraft.client.MinecraftClient;
@@ -54,6 +55,14 @@ public class ConsoleButton extends PressableWidget {
         return this;
     }
 
+    /** One of the mod's button icons in place of its label ({@link ButtonIcons}), in the label's colour, still when pressed. */
+    private ButtonIcons.@Nullable Icon symbol;
+
+    public ConsoleButton symbol(ButtonIcons.Icon symbol) {
+        this.symbol = symbol;
+        return this;
+    }
+
     /** The icons before the label: 7 rows, as the mock-ups' font draws them. */
     public enum Icon {
         PLAY("#...", "##..", "###.", "####", "###.", "##..", "#..."),
@@ -101,6 +110,18 @@ public class ConsoleButton extends PressableWidget {
                 held ? 0 : shown.paper() ? 0x30FFFFFF : 0x22FFFFFF);
         if (decoration != null) {
             decoration.draw(context, this);
+            return;
+        }
+        if (symbol != null) {
+            boolean lightInk = shown == Kind.GREEN || shown == Kind.RED || shown == Kind.PAPER_GREEN || shown == Kind.PAPER_TEAL;
+            int ink = shown == Kind.SCREEN ? (active ? 0xFFE0EEF3 : 0xFF5E5C88) : lightInk ? 0xFFFFFFFF
+                    : shown == Kind.PAPER ? 0xFF1E3A40 : shown == Kind.PAPER_OFF ? 0xFF8AA3A6 : shown == Kind.OFF ? 0xFF5E5E5E : ramp.outline();
+            // A button under 18 px: its − / + from the small set (ButtonGlyphs), the full icons need room around them
+            if (Math.min(width, height) < 18 && symbol == ButtonIcons.Icon.MINUS)
+                ButtonGlyphs.minus(context, getX(), getY(), width, height, ink);
+            else if (Math.min(width, height) < 18 && symbol == ButtonIcons.Icon.PLUS)
+                ButtonGlyphs.plus(context, getX(), getY(), width, height, ink);
+            else ButtonIcons.draw(context, symbol, getX(), getY(), width, height, ink, lightInk);
             return;
         }
 
