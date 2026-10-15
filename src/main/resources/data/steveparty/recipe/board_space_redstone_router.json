@@ -1,24 +1,29 @@
 {
   "type": "minecraft:crafting_shaped",
-  "fabric:type": "minecraft:crafting_shaped",
-  "category": "equipment",
+  "category": "redstone",
   "pattern": [
-    "CRC",
-    "CTC",
-    "CSC"
+    "TL ",
+    "GSG",
+    "IRI"
   ],
   "key": {
-    "C": {
-      "item": "minecraft:gold_ingot"
-    },
-    "R": {
+    "T": {
       "item": "minecraft:redstone_torch"
     },
-    "T": {
-      "item": "minecraft:chest"
+    "L": {
+      "item": "minecraft:lever"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
     },
     "S": {
-      "item": "minecraft:amethyst_shard"
+      "item": "steveparty:tile"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
     }
   },
   "result": {

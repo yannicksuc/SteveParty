@@ -67,7 +67,7 @@
   "book.steveparty.guide.board.placing.page1.title": "Slopes",
   "book.steveparty.guide.board.router.description": "Drive many spaces at once",
   "book.steveparty.guide.board.router.name": "Redstone Router",
-  "book.steveparty.guide.board.router.page0.text": "Its destinations: the spaces it drives.\\\n\\\nIts power [#](1C4E80)**replaces**[#]() theirs: one lever, a whole board.",
+  "book.steveparty.guide.board.router.page0.text": "Its destinations: the spaces it drives.\\\n\\\nIts power [#](1C4E80)**replaces**[#]() theirs: one lever, a whole board.\\\n\\\nIts lever shows its power: leaning one way at 0, the other at 15. Its torch lights while it is powered.",
   "book.steveparty.guide.board.router.page0.title": "Redstone Router",
   "book.steveparty.guide.board.router.page1.text": "- 15 plain · 14 bonus · 13 penalty\n- 11 start · 10 Stop · 9 Roll Again\n- 8 Teleport · 7 forward · 6 back\n- 5 shop · 1 a token passes",
   "book.steveparty.guide.board.router.page1.title": "Its comparator",

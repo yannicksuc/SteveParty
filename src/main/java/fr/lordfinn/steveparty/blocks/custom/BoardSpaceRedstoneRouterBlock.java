@@ -5,7 +5,15 @@ import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -22,10 +30,41 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * The Aiguilleur: a small board space on the redstone plate with a railway switch lever. The power it receives is in
+ * its state ({@link #POWER}): the lever leans with it (+90 degrees at 0 to -90 at 15, drawn by RouterLeverRenderer) and
+ * its redstone torch is lit while it receives any.
+ */
 public class BoardSpaceRedstoneRouterBlock extends CartridgeContainer {
     public static final MapCodec<BoardSpaceRedstoneRouterBlock> CODEC = Block.createCodec(BoardSpaceRedstoneRouterBlock::new);
+    /** The redstone power it receives, as shown by its lever and torch. */
+    public static final IntProperty POWER = Properties.POWER;
+    /** The plate, the gold slab and the space, the lever's housing and the torch (the lever itself is left out). */
+    private static final VoxelShape SHAPE = VoxelShapes.union(
+            Block.createCuboidShape(0, 0, 0, 16, 2, 16),
+            Block.createCuboidShape(1, 2, 1, 15, 3, 15),
+            Block.createCuboidShape(2, 3, 2, 14, 4, 14),
+            Block.createCuboidShape(5, 4, 6, 11, 10, 10),
+            Block.createCuboidShape(7, 4, 10, 9, 14, 12));
+
     public BoardSpaceRedstoneRouterBlock(Settings settings) {
         super(settings, 1);
+        setDefaultState(getDefaultState().with(POWER, 0));
+    }
+
+    @Override
+    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+        builder.add(POWER);
+    }
+
+    @Override
+    public BlockState getPlacementState(ItemPlacementContext ctx) {
+        return getDefaultState().with(POWER, ctx.getWorld().getReceivedRedstonePower(ctx.getBlockPos()));
+    }
+
+    @Override
+    protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return SHAPE;
     }
 
     @Override

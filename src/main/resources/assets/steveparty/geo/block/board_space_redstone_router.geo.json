@@ -1,0 +1,168 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.board_space_redstone_router",
+				"texture_width": 64,
+				"texture_height": 64,
+				"visible_bounds_width": 3,
+				"visible_bounds_height": 2,
+				"visible_bounds_offset": [
+					0,
+					0.75,
+					0
+				]
+			},
+			"bones": [
+				{
+					"name": "aiguilleur",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "levier",
+					"parent": "aiguilleur",
+					"pivot": [
+						0,
+						5,
+						0
+					],
+					"cubes": [
+						{
+							"origin": [
+								-1,
+								4,
+								-1
+							],
+							"size": [
+								2,
+								15,
+								2
+							],
+							"uv": {
+								"north": {
+									"uv": [
+										16,
+										14
+									],
+									"uv_size": [
+										2,
+										15
+									]
+								},
+								"east": {
+									"uv": [
+										18,
+										14
+									],
+									"uv_size": [
+										-2,
+										15
+									]
+								},
+								"south": {
+									"uv": [
+										16,
+										14
+									],
+									"uv_size": [
+										2,
+										15
+									]
+								},
+								"west": {
+									"uv": [
+										18,
+										14
+									],
+									"uv_size": [
+										-2,
+										15
+									]
+								}
+							}
+						},
+						{
+							"origin": [
+								-2,
+								19,
+								-2
+							],
+							"size": [
+								4,
+								4,
+								4
+							],
+							"uv": {
+								"north": {
+									"uv": [
+										18,
+										14
+									],
+									"uv_size": [
+										4,
+										4
+									]
+								},
+								"east": {
+									"uv": [
+										22,
+										14
+									],
+									"uv_size": [
+										-4,
+										4
+									]
+								},
+								"south": {
+									"uv": [
+										18,
+										14
+									],
+									"uv_size": [
+										4,
+										4
+									]
+								},
+								"west": {
+									"uv": [
+										22,
+										14
+									],
+									"uv_size": [
+										-4,
+										4
+									]
+								},
+								"up": {
+									"uv": [
+										26,
+										18
+									],
+									"uv_size": [
+										-4,
+										-4
+									]
+								},
+								"down": {
+									"uv": [
+										22,
+										22
+									],
+									"uv_size": [
+										-4,
+										-4
+									]
+								}
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

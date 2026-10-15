@@ -819,12 +819,12 @@
 	]
 	quest.42D5C0FDC568C5B3.title: "Pawn master"
 	quest.43758D7B5C5F556E.quest_desc: [
-		"Gold, a redstone torch, a chest and an amethyst shard."
+		"A tile with a switch lever: the lever leans with the power it receives, its torch lights while powered."
 		"The destinations of its cartridge are the tiles it drives: one lever switches a whole board."
 		"A comparator reads its tiles: 14 bonus, 13 malus, 10 Stop, 8 Teleport, 1 a pawn passes..."
 	]
 	quest.43758D7B5C5F556E.quest_subtitle: "Craft it (owned ones don't count)"
-	quest.43758D7B5C5F556E.title: "Board Space Redstone router"
+	quest.43758D7B5C5F556E.title: "Redstone Router"
 	quest.44A6CEA198F3D329.quest_desc: [
 		"Every recipe of the mod can be read in a recipe viewer (REI or EMI) if the pack has one: it also shows every tile with its cartridge."
 		"The mod's wiki (on its GitHub page) explains each block in detail."
