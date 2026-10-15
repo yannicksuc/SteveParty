@@ -162,11 +162,16 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     public static void onTokenStopped(ServerWorld world, BoardSpaceBlockEntity boardSpace) {
         BoardSpaceRedstoneRouterBlockEntity router = routerOf(world, boardSpace.getPos());
         if (router == null) return;
-        ItemStack stack = boardSpace.getActiveCartridgeItemStack();
-        var behavior = boardSpace.getBoardSpaceBehavior(stack);
-        int level = behavior == null ? LEVEL_DEFAULT : behavior.comparatorLevel(boardSpace, stack == null ? ItemStack.EMPTY : stack);
+        int level = landingLevel(boardSpace);
         if (level <= 0) return; // the role says nothing happened (a token blocked by a Threshold obstacle)
         router.pulse(Math.clamp(level, PASS_SIGNAL + 1, 15), LANDING_TICKS);
+    }
+
+    /** The role of {@code boardSpace} as a router says it when a token stops on it (0: nothing happened). */
+    public static int landingLevel(BoardSpaceBlockEntity boardSpace) {
+        ItemStack stack = boardSpace.getActiveCartridgeItemStack();
+        var behavior = boardSpace.getBoardSpaceBehavior(stack);
+        return behavior == null ? LEVEL_DEFAULT : behavior.comparatorLevel(boardSpace, stack == null ? ItemStack.EMPTY : stack);
     }
 
     /** Something happened on {@code boardSpace} (a token got over a Threshold obstacle): its router pulses {@code level}. */

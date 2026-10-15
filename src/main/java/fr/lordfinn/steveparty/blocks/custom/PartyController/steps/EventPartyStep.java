@@ -223,7 +223,7 @@ public class EventPartyStep extends PartyStep {
         }
         // The waiting bell was broken, moved away or set back to the simple mode: nothing to wait for any more
         if (waitingIndex >= 0 && world.getTime() % BELL_CHECK_INTERVAL_TICKS == 0
-                && !PartyBellBlockEntity.hasWaitingBell(partyControllerEntity, moments.get(waitingIndex)))
+                && !PartyBellBlockEntity.isHeld(partyControllerEntity, moments.get(waitingIndex)))
             ringFrom(waitingIndex + 1, partyControllerEntity);
     }
 

@@ -102,6 +102,8 @@ public final class PartyRewind {
         List<Text> lines = JournalRewind.undo(party, undone);
         int stepIndex = undone.getLast().stepIndex();
         party.flow().restart(stepIndex);
+        int turnsUndone = (int) undone.stream().filter(frame -> frame.kind() == JournalFrame.Kind.TURN).count();
+        party.ringMoment(PartyMoment.REWIND, Math.max(1, turnsUndone));
         Text name = party.getPartyData().getCurrentStep() instanceof TokenTurnPartyStep turn ? turn.getTokenDisplayName(world) : Text.literal("?");
         List<ServerPlayerEntity> audience = party.getPartyAudience();
         MessageUtils.sendToPlayers(audience, Text.translatable(told, name).formatted(Formatting.GOLD), MessageUtils.MessageType.CHAT);

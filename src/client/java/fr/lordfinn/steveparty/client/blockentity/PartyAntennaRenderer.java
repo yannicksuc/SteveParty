@@ -3,7 +3,8 @@ package fr.lordfinn.steveparty.client.blockentity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
+import fr.lordfinn.steveparty.client.screens.AntennaIcons;
+import fr.lordfinn.steveparty.utils.Argb;
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -33,8 +34,12 @@ import software.bernie.geckolib.renderer.GeoBlockRenderer;
  */
 public class PartyAntennaRenderer extends GeoBlockRenderer<PartyBellBlockEntity> {
     private static final String HEAD = "tete", DISH = "parabole", RECEIVER = "recepteur", GLOW = "recepteur_lueur";
-    /** The receiver at rest: its light red tip darkened. */
-    private static final int DARK = 0xFF642020;
+    /** The receiver and its head in light greys, tinted with the colour of the moment's family. */
+    private static final Identifier TINT = Steveparty.id("textures/block/party_antenna_tint.png");
+    /** The receiver switched off (no Party Controller in range). */
+    private static final int OFF = 0xFF4A4A4A;
+    /** How long the receiver blinks on and off while the antenna holds the party (ticks). */
+    private static final int HOLD_BLINK_TICKS = 20;
     /** The dish's pulse: how much it grows, for how long (ticks). */
     private static final float PULSE = 0.12f, PULSE_TICKS = 6;
     /** The red head shows for this long after a catch (ticks); the tip then fades back to dark. */
@@ -42,6 +47,7 @@ public class PartyAntennaRenderer extends GeoBlockRenderer<PartyBellBlockEntity>
 
     /** This frame's state, set before the bones are drawn. */
     private float yaw, pitch, age = Float.MAX_VALUE;
+    private int receiverColour, receiverLight;
 
     public PartyAntennaRenderer() {
         super(new DefaultedBlockGeoModel<>(Steveparty.id("party_antenna")));
@@ -53,7 +59,46 @@ public class PartyAntennaRenderer extends GeoBlockRenderer<PartyBellBlockEntity>
         yaw = lerpAngle(partialTick, entity.lastYaw, entity.yaw);
         pitch = MathHelper.lerp(partialTick, entity.lastPitch, entity.pitch);
         age = entity.ringTicks > 0 ? PartyBellBlockEntity.RING_TICKS - entity.ringTicks + partialTick : Float.MAX_VALUE;
+        receiver(entity, packedLight);
         super.render(entity, partialTick, matrices, bufferSource, packedLight, packedOverlay);
+        if (entity.getWorld() != null && WorldLabels.holdingWrench()
+                && dispatcher().camera.getPos().squaredDistanceTo(entity.getPos().toCenterPos()) <= BUBBLE_RANGE * BUBBLE_RANGE)
+            AntennaBubble.draw(entity, matrices, bufferSource, dispatcher());
+    }
+
+    /** Players with the Wrench in hand see what each antenna listens to, this far (blocks). */
+    private static final int BUBBLE_RANGE = 16;
+
+    private static net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher dispatcher() {
+        return MinecraftClient.getInstance().getBlockEntityRenderDispatcher();
+    }
+
+    /**
+     * The receiver, a light in the colour of the family of its moment (lit: it reads at night and under shaders):
+     * off without a Party Controller in range; a white flash fading to its colour when it catches its moment, and when
+     * clicked without the Wrench; blinking slowly while it holds the party.
+     */
+    private void receiver(PartyBellBlockEntity entity, int packedLight) {
+        int family = AntennaIcons.colour(entity.getMoment().family());
+        boolean linked = entity.getFaced() != null || entity.getWorld() == null;
+        receiverLight = LightmapTextureManager.MAX_LIGHT_COORDINATE;
+        if (age != Float.MAX_VALUE) {
+            float fade = MathHelper.clamp((age - GLOW_TICKS) / (PartyBellBlockEntity.RING_TICKS - GLOW_TICKS), 0, 1);
+            receiverColour = lerpColour(fade, 0xFFFFFFFF, family);
+        } else if (entity.blinkTicks > 0) {
+            receiverColour = entity.blinkTicks % 4 < 2 ? 0xFFFFFFFF : family;
+        } else if (entity.getWorld() == null) {
+            // Its item: the colour of its first moment, unlit
+            receiverColour = family;
+            receiverLight = packedLight;
+        } else if (!linked) {
+            receiverColour = OFF;
+            receiverLight = packedLight;
+        } else if (entity.isHolding() && (entity.getWorld().getTime() / HOLD_BLINK_TICKS) % 2 == 1) {
+            receiverColour = Argb.darken(family, 0.6f);
+        } else {
+            receiverColour = family;
+        }
     }
 
     private static float lerpAngle(float delta, float start, float end) {
@@ -85,29 +130,21 @@ public class PartyAntennaRenderer extends GeoBlockRenderer<PartyBellBlockEntity>
                 bone.setScaleY(scale);
                 bone.setScaleZ(scale);
             }
-            case RECEIVER -> {
-                if (age == Float.MAX_VALUE) colour = DARK;
-                else {
-                    packedLight = LightmapTextureManager.MAX_LIGHT_COORDINATE;
-                    float fade = MathHelper.clamp((age - GLOW_TICKS) / (PartyBellBlockEntity.RING_TICKS - GLOW_TICKS), 0, 1);
-                    colour = lerpColour(fade, 0xFFFFFFFF, DARK);
-                }
-            }
-            case GLOW -> {
-                if (age >= GLOW_TICKS) return;
-                packedLight = LightmapTextureManager.MAX_LIGHT_COORDINATE;
-                colour = glowColour(animatable.getMoment());
+            case RECEIVER, GLOW -> {
+                // The red head around the tip only shows while it catches its moment
+                if (bone.getName().equals(GLOW) && age >= GLOW_TICKS) return;
+                // Drawn from the grey copy of the texture, in the receiver's colour (GeckoLib takes its own buffer
+                // back for the next bones: GeoRenderer#checkAndRefreshBuffer)
+                RenderLayer tinted = RenderLayer.getEntityCutout(TINT);
+                super.renderRecursively(poseStack, animatable, bone, tinted, bufferSource, bufferSource.getBuffer(tinted), isReRender,
+                        partialTick, receiverLight, packedOverlay, bone.getName().equals(GLOW) ? Argb.lighten(receiverColour, 0.2f) : receiverColour);
+                return;
             }
             default -> {
             }
         }
         super.renderRecursively(poseStack, animatable, bone, renderType, bufferSource, buffer, isReRender, partialTick,
                 packedLight, packedOverlay, colour);
-    }
-
-    /** The tint of the lit head for the moment it listens to: none yet, the texture's own red for every moment. */
-    private static int glowColour(PartyMoment moment) {
-        return 0xFFFFFFFF;
     }
 
     private static int lerpColour(float delta, int from, int to) {

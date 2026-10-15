@@ -6,6 +6,7 @@ import fr.lordfinn.steveparty.client.gui.party.OutcomeRouletteHud;
 import fr.lordfinn.steveparty.client.gui.party.PartyHud;
 import fr.lordfinn.steveparty.client.renderer.FloatingTextRenderer;
 import fr.lordfinn.steveparty.client.renderer.GoalPolePopupRenderer;
+import fr.lordfinn.steveparty.client.screens.AntennaScreen;
 import fr.lordfinn.steveparty.client.screens.DicePickScreen;
 import fr.lordfinn.steveparty.client.screens.TeleportLinkChoiceScreen;
 import fr.lordfinn.steveparty.client.screens.TokenSpellScreen;
@@ -65,6 +66,7 @@ public class PayloadReceivers {
             FloatingTextRenderer.spawn(payload.text(), payload.pos(), payload.velocity(), payload.duration(), payload.scale(), payload.color(), payload.fadeStart());
         });
         ClientPayloads.receive(GoalPolePopupsPayload.ID, (payload, context) -> GoalPolePopupRenderer.receive(payload));
+        ClientPayloads.receive(OpenAntennaScreenPayload.ID, (payload, context) -> context.client().setScreen(new AntennaScreen(payload.pos())));
 
         ClientPayloads.receive(BoardActorStatePayload.ID, (payload, context) -> BoardActorStates.receive(context.client().world, payload));
         ClientPayloads.receive(SquishAnimationPayload.ID, (payload, context) -> SquishAnimations.start(context.client().world, payload));

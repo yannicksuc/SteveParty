@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.components.MiniGamePageRef;
 import fr.lordfinn.steveparty.components.ModComponents;
@@ -78,6 +79,11 @@ public class MiniGamePartyStep extends PartyStep {
     private List<UUID> tokens;
     boolean miniGameChosen; // no initializer, see above
     Phase phase;
+    /**
+     * The moment its antennas hold it at, before the practice or the real round ({@link PartyMoment#PRACTICE_ROUND},
+     * {@link PartyMoment#MINIGAME_START}), null for none. Not saved: on load the step goes on as it would have.
+     */
+    private @Nullable PartyMoment heldAt;
     /** Players taking part (owners of the tokens), in turn order. */
     List<UUID> participants;
     /** Where a player sent to the mini-game stood before it. */
@@ -214,7 +220,7 @@ public class MiniGamePartyStep extends PartyStep {
 
     @Override
     public boolean isWaitingForBell() {
-        return status == Status.IN_PROGRESS && phase == Phase.CHOSEN_WAIT;
+        return status == Status.IN_PROGRESS && (phase == Phase.CHOSEN_WAIT || heldAt != null);
     }
 
     @Override
@@ -372,7 +378,14 @@ public class MiniGamePartyStep extends PartyStep {
 
     @Override
     public boolean onMomentReleased(PartyMoment moment, PartyControllerEntity partyControllerEntity) {
-        if (moment != PartyMoment.MINIGAME_CHOSEN || !isWaitingForBell()) return false;
+        if (status != Status.IN_PROGRESS) return false;
+        if (heldAt != null && moment == heldAt) {
+            heldAt = null;
+            if (moment == PartyMoment.PRACTICE_ROUND) startPracticeNow(partyControllerEntity);
+            else departNow(partyControllerEntity);
+            return true;
+        }
+        if (moment != PartyMoment.MINIGAME_CHOSEN || phase != Phase.CHOSEN_WAIT) return false;
         startCountdown(partyControllerEntity);
         return true;
     }
@@ -411,8 +424,22 @@ public class MiniGamePartyStep extends PartyStep {
         else depart(controller);
     }
 
-    /** The departure for the real round (straight after the countdown, or once everyone is ready after the practice). */
+    /**
+     * The departure for the real round (straight after the countdown, or once everyone is ready after the practice):
+     * its antennas first, waiting there if one waits ({@link PartyMoment#MINIGAME_START}).
+     */
     public void depart(PartyControllerEntity controller) {
+        cancelFlow();
+        if (controller.ringMoment(PartyMoment.MINIGAME_START, participants.size())) {
+            heldAt = PartyMoment.MINIGAME_START;
+            controller.markDirty();
+            controller.sendPacketToInterestedPlayers();
+            return;
+        }
+        departNow(controller);
+    }
+
+    private void departNow(PartyControllerEntity controller) {
         boolean afterPractice = phase == Phase.PRACTICE;
         cancelFlow();
         ready.clear();
@@ -442,6 +469,16 @@ public class MiniGamePartyStep extends PartyStep {
      */
     public void startPractice(PartyControllerEntity controller) {
         cancelFlow();
+        if (controller.ringMoment(PartyMoment.PRACTICE_ROUND, participants.size())) {
+            heldAt = PartyMoment.PRACTICE_ROUND;
+            controller.markDirty();
+            controller.sendPacketToInterestedPlayers();
+            return;
+        }
+        startPracticeNow(controller);
+    }
+
+    private void startPracticeNow(PartyControllerEntity controller) {
         ready.clear();
         practiceOver = false;
         departure.sendOut(controller, Phase.PRACTICE);
@@ -580,6 +617,9 @@ public class MiniGamePartyStep extends PartyStep {
     @Override
     public void tick(PartyControllerEntity partyControllerEntity, ServerWorld world) {
         super.tick(partyControllerEntity, world);
+        // The antenna it waited for was broken or set back to pulse: nothing to wait for any more
+        if (heldAt != null && world.getTime() % 20 == 0 && !PartyBellBlockEntity.isHeld(partyControllerEntity, heldAt))
+            partyControllerEntity.releaseMoment(heldAt);
         if (!isPractice() || world.getTime() % 20 != 0) return;
         if (!checkReady(partyControllerEntity)) screens.showPractice(partyControllerEntity);
     }

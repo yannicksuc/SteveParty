@@ -3,6 +3,8 @@ package fr.lordfinn.steveparty.blocks.custom;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.items.custom.WrenchItem;
+import fr.lordfinn.steveparty.payloads.custom.OpenAntennaScreenPayload;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import fr.lordfinn.steveparty.utils.MessageUtils;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.*;
@@ -40,9 +42,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Party Antenna (registry id {@code party_bell}, see {@link PartyBellBlockEntity}).
  * <ul>
- *     <li>Right-click (empty hand): next moment listened to; sneaking: previous one.</li>
- *     <li>Right-click with a wrench: simple mode (pulse only) / waiting mode (the party pauses at that moment until
- *     the antenna receives a redstone signal).</li>
+ *     <li>Right-click with the Wrench: its screen (moment, pulse or waiting mode, filter, test). During a party, only
+ *     for who placed it, creative players and operators.</li>
+ *     <li>Right-click with an empty hand: nothing changes, it says it is set with the Wrench.</li>
  *     <li>Output: a pulse of power 15 on every side; comparator: value of the last moment heard.</li>
  * </ul>
  */
@@ -53,8 +55,8 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
     public static final BooleanProperty POWERED = Properties.POWERED;
     /** Where its head rests (toward whoever placed it): what it scans around when no Party Controller is near. */
     public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
-    /** Synced block event: it caught a moment (its receiver lights, its dish pulses). */
-    public static final int RING_EVENT = 1;
+    /** Synced block events: it caught a moment (its receiver lights, its dish pulses); a click without the Wrench (it blinks). */
+    public static final int RING_EVENT = 1, BLINK_EVENT = 2;
     /** Length of the pulse: 2 redstone ticks. */
     public static final int PULSE_TICKS = 4;
 
@@ -123,52 +125,40 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
     @Override
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (stack.getItem() instanceof WrenchItem) {
-            if (!world.isClient) toggleWaiting(state, world, pos, player);
+            if (player instanceof ServerPlayerEntity serverPlayer && world.getBlockEntity(pos) instanceof PartyBellBlockEntity antenna) {
+                if (antenna.maySet(serverPlayer)) ServerPlayNetworking.send(serverPlayer, new OpenAntennaScreenPayload(pos));
+                else MessageUtils.sendToPlayer(serverPlayer, Text.translatable("message.steveparty.party_bell.not_yours")
+                        .formatted(Formatting.RED), MessageUtils.MessageType.ACTION_BAR);
+            }
             return ItemActionResult.SUCCESS;
         }
-        // Empty hand: onUse (cycle the moment); any other item keeps its own use (placing redstone next to it...)
+        // Empty hand: onUse (says it is set with the Wrench); any other item keeps its own use (redstone next to it...)
         return stack.isEmpty() ? ItemActionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION : ItemActionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
     }
 
+    /** Empty hand: nothing changes (reading it never sets it); it says it is set with the Wrench, and blinks once. */
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
         if (!world.isClient) {
-            PartyMoment moment = state.get(MOMENT).next(player.isSneaking());
-            BlockState newState = state.with(MOMENT, moment);
-            world.setBlockState(pos, newState, Block.NOTIFY_ALL);
-            world.playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 0.5f,
-                    0.7f + 0.1f * moment.ordinal());
-            showMode(player, newState);
+            player.sendMessage(Text.translatable("message.steveparty.wrench_required").withColor(0xFFD24A), true);
+            world.addSyncedBlockEvent(pos, state.getBlock(), BLINK_EVENT, 0);
         }
         return ActionResult.SUCCESS;
     }
 
-    private static void toggleWaiting(BlockState state, World world, BlockPos pos, PlayerEntity player) {
-        PartyMoment moment = state.get(MOMENT);
-        if (!moment.canWait()) {
-            if (player instanceof ServerPlayerEntity serverPlayer)
-                MessageUtils.sendToPlayer(serverPlayer, Text.translatableWithFallback("message.steveparty.party_bell.cannot_wait",
-                        "The party cannot wait at this moment.").formatted(Formatting.RED), MessageUtils.MessageType.ACTION_BAR);
-            return;
+    /**
+     * Sets the antenna as its screen says: the moment it listens to, its waiting mode (off for a moment that never
+     * waits), its filter.
+     */
+    public static void apply(World world, BlockPos pos, PartyMoment moment, boolean waiting, PartyBellBlockEntity.Filter filter, int filterValue) {
+        BlockState state = world.getBlockState(pos);
+        if (!(state.getBlock() instanceof PartyBellBlock) || !(world.getBlockEntity(pos) instanceof PartyBellBlockEntity antenna)) return;
+        BlockState newState = state.with(MOMENT, moment).with(WAITING, waiting && moment.canWait());
+        if (newState != state) {
+            world.setBlockState(pos, newState, Block.NOTIFY_ALL);
+            world.playSound(null, pos, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), SoundCategory.BLOCKS, 0.4f, 0.8f + 0.04f * moment.ordinal());
         }
-        BlockState newState = state.with(WAITING, !state.get(WAITING));
-        world.setBlockState(pos, newState, Block.NOTIFY_ALL);
-        world.playSound(null, pos, SoundEvents.BLOCK_COPPER_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0f, 2.0f);
-        showMode(player, newState);
-    }
-
-    private static void showMode(PlayerEntity player, BlockState state) {
-        if (!(player instanceof ServerPlayerEntity serverPlayer)) return;
-        PartyMoment moment = state.get(MOMENT);
-        boolean waiting = state.get(WAITING) && moment.canWait();
-        Text mode = waiting
-                ? Text.translatableWithFallback("message.steveparty.party_bell.waiting", "party waits").formatted(Formatting.GOLD)
-                : Text.translatableWithFallback("message.steveparty.party_bell.simple", "pulse").formatted(Formatting.GREEN);
-        MessageUtils.sendToPlayer(serverPlayer, Text.translatableWithFallback("message.steveparty.party_bell.mode",
-                        "Party Antenna: %1$s (%2$s) - comparator: %3$s",
-                        moment.getText().copy().formatted(Formatting.YELLOW), mode,
-                        Text.translatable(moment.valueDescriptionKey())),
-                MessageUtils.MessageType.ACTION_BAR);
+        if (filter != antenna.getFilter() || filterValue != antenna.getFilterValue()) antenna.setFilter(filter, filterValue);
     }
 
     // ---------------------------------------------------------------- redstone
@@ -187,6 +177,7 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
     protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
         if (state.get(POWERED))
             world.setBlockState(pos, state.with(POWERED, false), Block.NOTIFY_ALL);
+        if (world.getBlockEntity(pos) instanceof PartyBellBlockEntity antenna) antenna.onPulseEnd();
     }
 
     @Override
@@ -201,8 +192,10 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
     public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
         // Placed next to a powered block: that is not a signal sent to the antenna
-        if (!world.isClient && world.getBlockEntity(pos) instanceof PartyBellBlockEntity bell)
+        if (!world.isClient && world.getBlockEntity(pos) instanceof PartyBellBlockEntity bell) {
             bell.initRedstoneInput(world.isReceivingRedstonePower(pos));
+            if (placer != null) bell.setPlacer(placer.getUuid());
+        }
     }
 
     @Override

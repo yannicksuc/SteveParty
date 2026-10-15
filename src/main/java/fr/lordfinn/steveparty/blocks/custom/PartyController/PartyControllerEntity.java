@@ -126,6 +126,8 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     private final PartyAudience audience = new PartyAudience(this);
     private final PartyTokenHomes tokenHomes = new PartyTokenHomes();
     private final PartyFlow flow = new PartyFlow(this);
+    /** Coins, Party Stars and the leader, for the antennas. */
+    private final PartyStandingsWatch standingsWatch = new PartyStandingsWatch(this);
     /** Its board as it remembers it (saved), and as last read. */
     private final PartyBoard.Memory boardMemory = new PartyBoard.Memory();
     private @Nullable PartyBoard.Snapshot board;
@@ -808,6 +810,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         if (serverWorld.getTime() % LIVE_SYNC_INTERVAL_TICKS == 0)
             syncLiveData(serverWorld);
         flow.tick(serverWorld);
+        standingsWatch.tick(serverWorld);
     }
 
     @Override
@@ -1235,6 +1238,16 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             party.get().ringMoment(PartyMoment.DICE_ROLLED, rollValue);
         }
         else PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), PartyMoment.DICE_ROLLED, rollValue);
+    }
+
+    /**
+     * A moment of {@code token}'s movement (fork, path chosen, landing): the antennas of its party, or the free play
+     * antennas around it. These moments never wait (the token is moving).
+     */
+    public static void onTokenMoment(ServerWorld world, Entity token, PartyMoment moment, int value) {
+        Optional<PartyControllerEntity> party = getRunningPartyOf(token.getUuid());
+        if (party.isPresent()) party.get().ringMoment(moment, value);
+        else PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), moment, value);
     }
 
     /** Free play: a token that is not in a running party finished its movement. */
