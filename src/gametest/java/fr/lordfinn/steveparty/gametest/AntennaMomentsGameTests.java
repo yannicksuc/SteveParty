@@ -45,8 +45,8 @@ import static fr.lordfinn.steveparty.gametest.kit.TestWait.when;
 
 /**
  * The moments a Party Antenna listens to: each one rings once, at its time, with its value; the filter keeps only the
- * values asked for; the waiting mode holds the party there. Each test in a batch of its own: an antenna listens to the
- * closest running party within 64 blocks.
+ * values asked for; the waiting mode holds the party there. Each test in a batch of its own (out of a party, see
+ * AntennaFreePlayGameTests).
  */
 public class AntennaMomentsGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 1);

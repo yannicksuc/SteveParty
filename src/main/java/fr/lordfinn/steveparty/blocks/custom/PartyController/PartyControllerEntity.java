@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.PartyJournal;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
@@ -1273,7 +1274,7 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     }
 
     /**
-     * A dice is about to move a token: rings the "dice rolled" bells of its party, or the free play bells around it.
+     * A dice is about to move a token: rings the "dice rolled" bells of its party, or the free play bells of its board.
      */
     public static void onTokenDiceRolled(ServerWorld world, Entity token, int rollValue) {
         Optional<PartyControllerEntity> party = getRunningPartyOf(token.getUuid());
@@ -1281,17 +1282,17 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
             PartyStatsCollector.rolled(party.get(), token.getUuid(), rollValue);
             party.get().ringMoment(PartyMoment.DICE_ROLLED, rollValue);
         }
-        else PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), PartyMoment.DICE_ROLLED, rollValue);
+        else PartyBellBlockEntity.ringFreePlay(world, token, PartyMoment.DICE_ROLLED, rollValue);
     }
 
     /**
      * A moment of {@code token}'s movement (fork, path chosen, landing): the antennas of its party, or the free play
-     * antennas around it. These moments never wait (the token is moving).
+     * antennas of its board. These moments never wait (the token is moving).
      */
     public static void onTokenMoment(ServerWorld world, Entity token, PartyMoment moment, int value) {
         Optional<PartyControllerEntity> party = getRunningPartyOf(token.getUuid());
         if (party.isPresent()) party.get().ringMoment(moment, value);
-        else PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), moment, value);
+        else PartyBellBlockEntity.ringFreePlay(world, token, moment, value);
     }
 
     /** The coins, Party Stars and leader looked at now rather than at the next look (see PartyStandingsWatch). */
@@ -1299,10 +1300,17 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         standingsWatch.look(world);
     }
 
-    /** Free play: a token that is not in a running party finished its movement. */
-    public static void onFreeTokenArrived(ServerWorld world, Entity token) {
-        if (getRunningPartyOf(token.getUuid()).isEmpty())
-            PartyBellBlockEntity.ringFreePlay(world, token.getBlockPos(), PartyMoment.TURN_END, 1);
+    /**
+     * Free play: a token that is not in a running party finished its movement: the antennas of its board hear it land
+     * on {@code landedOn} (the role of the space, when it says something) and then its turn end.
+     *
+     * @param landedOn the space it stopped on; null when its roll moved nothing (no landing)
+     */
+    public static void onFreeTokenArrived(ServerWorld world, Entity token, @Nullable BoardSpaceBlockEntity landedOn) {
+        if (getRunningPartyOf(token.getUuid()).isPresent()) return;
+        int role = landedOn == null ? 0 : BoardSpaceRedstoneRouterBlockEntity.landingLevel(landedOn);
+        if (role > 0) PartyBellBlockEntity.ringFreePlay(world, token, PartyMoment.TOKEN_LANDS, role);
+        PartyBellBlockEntity.ringFreePlay(world, token, PartyMoment.TURN_END, 1);
     }
 
     /**

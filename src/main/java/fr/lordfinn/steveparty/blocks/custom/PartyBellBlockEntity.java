@@ -7,11 +7,14 @@ import fr.lordfinn.steveparty.board.PartyLink;
 import fr.lordfinn.steveparty.board.PartyLinked;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import fr.lordfinn.steveparty.utils.TickableBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.util.StringIdentifiable;
@@ -42,14 +45,15 @@ import java.util.UUID;
  * <p>
  * An antenna is linked with the Tile Linker Brush to an element of a party ({@link #getLink}: the Party Controller, any
  * block of a board, a Mini-game Controller..., see {@link LinkedParty}) and listens to that party (running, or standing
- * on its end); unlinked, it hears nothing. Linked to a board no party runs on, it hears the free play moments (dice
- * rolled, token arrived...) of the tokens within {@link #RANGE} blocks.
+ * on its end); unlinked, it hears nothing. Out of a party it hears only the moments {@link PartyMoment#outOfParty}, and
+ * only through its link, however far: linked to a board, those of the free tokens moving on that board
+ * ({@link #ringFreePlay}); linked to a mini-game, the runs of that mini-game out of a party ({@link #ringMiniGameRun}).
+ * Those never wait: there is no party to pause.
  * <p>
  * Its head turns toward what it is linked to; unlinked, it slowly scans around its {@link PartyBellBlock#FACING}. The
  * turn and the lit receiver live on the client only ({@link #yaw}, {@link #ringTicks}).
  */
 public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockEntity, TickableBlockEntity, PartyLinked {
-    public static final int RANGE = 64;
     /** Loaded server-side antennas, keyed by dimension + position. */
     private static final Map<GlobalPos, PartyBellBlockEntity> BELLS = ServerMemory.forgetOnStop(new LinkedHashMap<>());
     private static final int FACE_CHECK_TICKS = 20;
@@ -515,15 +519,38 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
     }
 
     /**
-     * Free play: rings the bells listening to {@code moment} within {@link #RANGE} blocks of {@code pos} that have
-     * no party controller around (those follow their party instead).
+     * Free play: {@code token}, in no running party, lives {@code moment} on the board space it stands on. The antennas
+     * listening to it that are linked to an element of that board hear it, however far; no other (unlinked, linked
+     * elsewhere). The board of a space is its Party Controller's ({@link PartyControllerEntity#getControllerOfBoardSpace},
+     * what an antenna linked to a space listens to too); a board whose party runs (or stands on its end) is left to
+     * its party. Never waits. Only for the moments {@link PartyMoment#outOfParty}.
      */
-    public static void ringFreePlay(ServerWorld world, BlockPos pos, PartyMoment moment, int value) {
+    public static void ringFreePlay(ServerWorld world, Entity token, PartyMoment moment, int value) {
+        if (!moment.outOfParty()) return;
+        BoardSpaceBlockEntity space = BoardSpaces.boardSpaceOf(token);
+        if (space == null) return;
+        PartyControllerEntity board = PartyControllerEntity.getControllerOfBoardSpace(world, space.getPos(),
+                PartyControllerEntity.BOARD_NEARBY_RADIUS).orElse(null);
+        if (board == null || board.getPartyData().isStarted() || board.getPartyData().isAtEnd()) return;
         for (PartyBellBlockEntity bell : bells()) {
-            if (bell.isRemoved() || bell.world != world || bell.getMoment() != moment) continue;
-            if (bell.link.get() == null || bell.pos.getSquaredDistance(pos) >= (double) RANGE * RANGE) continue;
-            if (bell.getListenedController(world).isPresent()) continue;
-            bell.hear(value);
+            if (bell.isRemoved() || bell.getMoment() != moment || !(bell.world instanceof ServerWorld bellWorld)) continue;
+            if (bell.link.party(bellWorld) == board) bell.hear(value);
+        }
+    }
+
+    /**
+     * A mini-game played out of any party (from its Mini-game Controller, or its page's « Test »: see MiniGameTest)
+     * lives {@code moment}: the antennas listening to it that are linked to an element of that mini-game (its
+     * Mini-game Controller, a podium, a pipe...) hear it, however far. Never waits. Only for the moments
+     * {@link PartyMoment#outOfParty}.
+     */
+    public static void ringMiniGameRun(UUID page, PartyMoment moment, int value) {
+        if (!moment.outOfParty()) return;
+        for (PartyBellBlockEntity bell : bells()) {
+            if (bell.isRemoved() || bell.getMoment() != moment || bell.link.get() == null
+                    || !(bell.world instanceof ServerWorld bellWorld)) continue;
+            LinkedParty linked = bell.link.linked(bellWorld, false);
+            if (linked.party() == null && linked.pages().contains(page)) bell.hear(value);
         }
     }
 
