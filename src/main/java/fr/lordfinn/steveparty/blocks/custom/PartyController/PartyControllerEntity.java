@@ -230,6 +230,14 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     }
 
     /**
+     * The loaded controller nearest to {@code pos} within {@code radius} blocks, its party running or not, a running
+     * party's first (an old Piggy Bank linking itself to the controller it used to find alone).
+     */
+    public static Optional<PartyControllerEntity> getClosestPartyControllerEntity(World world, BlockPos pos, int radius) {
+        return PartyControllers.closest(world, pos, radius);
+    }
+
+    /**
      * The party of the board space at {@code pos}: the loaded controller whose board holds it, else the closest one
      * within {@code fallbackRadius} blocks (a board no controller has read yet); running, or ended if {@code includeEnded}.
      */

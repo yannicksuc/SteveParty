@@ -166,6 +166,15 @@ public final class PartyControllers {
                 .min(Comparator.comparingDouble(entity -> entity.getPos().getSquaredDistance(pos)));
     }
 
+    /** See {@link PartyControllerEntity#getClosestPartyControllerEntity}. */
+    static Optional<PartyControllerEntity> closest(World world, BlockPos pos, int radius) {
+        return ACTIVE.values().stream()
+                .filter(entity -> !entity.isRemoved() && entity.getWorld() == world)
+                .filter(entity -> entity.getPos().getSquaredDistance(pos) < (double) radius * radius)
+                .min(Comparator.<PartyControllerEntity, Boolean>comparing(entity -> !entity.getPartyData().isStarted())
+                        .thenComparing(closestTo(pos)));
+    }
+
     /** The loaded controller whose running party contains the token, if any. */
     static Optional<PartyControllerEntity> runningPartyOf(UUID tokenUUID) {
         return ACTIVE.values().stream()

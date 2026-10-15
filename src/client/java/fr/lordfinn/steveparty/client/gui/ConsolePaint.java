@@ -93,6 +93,18 @@ public final class ConsolePaint {
         pattern(context, "info", INFO, INFO_COLOURS, ix, iy);
     }
 
+    /**
+     * The red cross laid on the bottom-right corner of the Tile Linker Brush's icon: « linked to nothing » (a Piggy
+     * Bank linked to no party), 8 px, its strokes 2 px wide, outlined dark to read on any background.
+     */
+    public static final String[] NOT_LINKED = {"##....##", "#xx##xx#", ".#xxxx#.", "..#xx#..", "..#xx#..", ".#xxxx#.", "#xx##xx#", "##....##"};
+    public static final Map<Character, Integer> NOT_LINKED_COLOURS = Map.of('#', 0xFF3A0A0A, 'x', 0xFFFF4A40);
+
+    /** {@link #NOT_LINKED} with its top-left corner at (x, y). */
+    public static void notLinked(DrawContext context, int x, int y) {
+        pattern(context, "not_linked", NOT_LINKED, NOT_LINKED_COLOURS, x, y);
+    }
+
     /** A small icon from rows of characters, each one a colour (others: nothing). */
     public static void pattern(DrawContext context, String key, String[] rows, Map<Character, Integer> colours, int x, int y) {
         draw(context, TEXTURES.get("i" + key, () -> PixelArt.pattern(rows, colours)), x, y);

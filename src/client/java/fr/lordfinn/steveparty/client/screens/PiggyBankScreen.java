@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.PiggyBankBlockEntity.Target;
+import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
@@ -20,7 +21,9 @@ import static fr.lordfinn.steveparty.screen_handlers.custom.PiggyBankScreenHandl
 /**
  * The Piggy Bank's menu: on its pink tab, the Inventory Cartridge slot and a button per target, each its icon (the
  * dice: the player of the turn, the gold podium: the winners, the party: everyone, the compass: the nearest); the one
- * chosen is gold and pushed in. Its name on hover only. On the right, the cartridge's menu (what is given or taken).
+ * chosen is gold and pushed in. Its name on hover only. Linked to no party (it does nothing then): the Tile Linker
+ * Brush crossed out in red after the target buttons, what it means on hover. On the right, the cartridge's menu
+ * (what is given or taken).
  */
 public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHandler> {
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/piggy_bank.png");
@@ -49,10 +52,19 @@ public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHan
         return TEXTURE;
     }
 
-    /** The pink tab's right edge (its outline is at 147). */
+    /** The pink tab's right edge (its outline is at 167). */
     @Override
     protected int wireFromX() {
-        return 148;
+        return 168;
+    }
+
+    /** The crossed brush (unlinked), on the button row 4 px after the last button (its icon's row), from the menu's corner. */
+    private static final int NOT_LINKED_X = BUTTONS_X + 3 * BUTTON_STEP + BUTTON + 4, NOT_LINKED_Y = BUTTONS_Y + 1;
+    private static final ItemStack BRUSH = new ItemStack(ModItems.TILE_LINKER_BRUSH);
+    private static final String NOT_LINKED_KEY = "gui.steveparty.piggy_bank.not_linked";
+
+    private boolean notLinkedHovered(double mouseX, double mouseY) {
+        return !handler.isLinked() && HitArea.contains(mouseX, mouseY, x + NOT_LINKED_X, y + NOT_LINKED_Y, 16, 16);
     }
 
     private int buttonX(int index) {
@@ -87,7 +99,16 @@ public class PiggyBankScreen extends CartridgeContainerScreen<PiggyBankScreenHan
             int push = on ? 1 : 0;
             context.drawItem(target.getIcon(), bx + 1 + push, by + 1 + push);
         }
-        if (hover >= 0) context.drawTooltip(textRenderer, Target.byId(hover).getText(), mouseX, mouseY);
+        if (!handler.isLinked()) {
+            context.getMatrices().push();
+            context.getMatrices().translate(0, 0, 200);
+            context.drawItem(BRUSH, x + NOT_LINKED_X, y + NOT_LINKED_Y);
+            context.getMatrices().translate(0, 0, 200);
+            ConsolePaint.notLinked(context, x + NOT_LINKED_X + 16 - ConsolePaint.NOT_LINKED.length, y + NOT_LINKED_Y + 16 - ConsolePaint.NOT_LINKED.length);
+            context.getMatrices().pop();
+        }
+        if (notLinkedHovered(mouseX, mouseY)) context.drawTooltip(textRenderer, Text.translatable(NOT_LINKED_KEY), mouseX, mouseY);
+        else if (hover >= 0) context.drawTooltip(textRenderer, Target.byId(hover).getText(), mouseX, mouseY);
         else drawTooltips(context, mouseX, mouseY);
     }
 

@@ -21,8 +21,9 @@ import org.jetbrains.annotations.Nullable;
 public class PiggyBankScreenHandler extends CartridgeContainerScreenHandler {
     /**
      * Where the cartridge slot and the first target button are, from the menu's corner; the buttons' size and step. On
-     * the pink tab (centred over the inventory: outline from 28 to 147, flat from 31 to 144, from 3 to the inventory's
-     * tab at 39): 6 px left of the slot, between the slot and the buttons and right of them; 9 px above and below.
+     * the pink tab (outline from 28 to 167, flat from 31 to 164, from 3 to the inventory's tab at 39): 6 px left of the
+     * slot, between the slot and the buttons; right of them the crossed brush of an unlinked bank (PiggyBankScreen),
+     * then 5 px; 9 px above and below.
      */
     public static final int SLOT_X = 38, SLOT_Y = 13, BUTTONS_X = 61, BUTTONS_Y = 12, BUTTON = 18, BUTTON_STEP = 20;
 
@@ -38,7 +39,7 @@ public class PiggyBankScreenHandler extends CartridgeContainerScreenHandler {
         this.inventory = blockInventory;
         this.properties = properties;
         checkSize(blockInventory, 1);
-        checkDataCount(properties, 1);
+        checkDataCount(properties, 2);
         addProperties(properties);
         init(playerInventory, 54);
         addCartridgeMenu(playerInventory.player, pos);
@@ -46,7 +47,7 @@ public class PiggyBankScreenHandler extends CartridgeContainerScreenHandler {
 
     /** Client side: the slot's copy, the bank's position from the opening data. */
     public PiggyBankScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload payload) {
-        this(syncId, playerInventory, new SimpleInventory(1), new ArrayPropertyDelegate(1), payload.pos());
+        this(syncId, playerInventory, new SimpleInventory(1), new ArrayPropertyDelegate(2), payload.pos());
     }
 
     @Override
@@ -61,6 +62,11 @@ public class PiggyBankScreenHandler extends CartridgeContainerScreenHandler {
 
     public PiggyBankBlockEntity.Target getTarget() {
         return PiggyBankBlockEntity.Target.byId(properties.get(0));
+    }
+
+    /** Whether the Piggy Bank is linked to a party element (unlinked, it does nothing: its menu shows it). */
+    public boolean isLinked() {
+        return properties.get(1) != 0;
     }
 
     @Override

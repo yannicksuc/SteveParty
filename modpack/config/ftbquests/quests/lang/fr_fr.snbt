@@ -597,7 +597,7 @@
 	quest.280705EA919A80DA.quest_desc: [
 		"Un cochon en céramique avec une Cartouche Bonus / Malus. Chaque impulsion donne (ou prend) ses objets : joueur du tour, gagnants du mini-jeu, tout le monde ou le plus proche."
 		"Mode tout ou rien : de quoi vendre une Party Star contre des Pièces."
-		"Lie-la au Pinceau lieur à un élément d'une partie ; sinon elle sert la partie la plus proche (64 blocs)."
+		"Lie-la au Pinceau lieur à un élément d'une partie : elle sert cette partie ; pas liée, elle ne fait rien (son panneau et son menu montrent le pinceau barré de rouge)."
 	]
 	quest.280705EA919A80DA.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.280705EA919A80DA.title: "Tirelire"

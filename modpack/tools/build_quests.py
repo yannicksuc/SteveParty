@@ -662,10 +662,10 @@ q("bell", 4, -4, I("party_bell"), deps=["controller"], rewards=T2(),
 q("piggy", 4, -2.75, I("piggy_bank"), deps=["controller", "board.inventory"], rewards=T2(),
   desc=(["A ceramic pig with an Inventory Cartridge. Each pulse gives (or takes) its items: player of the turn, mini-game winners, everyone or the nearest.",
          "All-or-nothing mode: sell a Party Star for Coins.",
-         "Link it to any part of a game with the Tile Linker Brush; otherwise it serves the nearest party (64 blocks)."],
+         "Link it to any part of a game with the Tile Linker Brush: it serves that party; not linked, it does nothing (its panel and menu show the brush crossed out in red)."],
         ["Un cochon en céramique avec une Cartouche Bonus / Malus. Chaque impulsion donne (ou prend) ses objets : joueur du tour, gagnants du mini-jeu, tout le monde ou le plus proche.",
          "Mode tout ou rien : de quoi vendre une Party Star contre des Pièces.",
-         "Lie-la au Pinceau lieur à un élément d'une partie ; sinon elle sert la partie la plus proche (64 blocs)."]))
+         "Lie-la au Pinceau lieur à un élément d'une partie : elle sert cette partie ; pas liée, elle ne fait rien (son panneau et son menu montrent le pinceau barré de rouge)."]))
 
 CARDS = [
     ("turns", "blue", ["Every pawn plays once."], ["Chaque pion joue une fois."]),
