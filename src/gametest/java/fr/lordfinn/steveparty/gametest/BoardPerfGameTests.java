@@ -74,11 +74,9 @@ public class BoardPerfGameTests implements SteveGameTest {
 
         context.setBlockState(ROUTER, ModBlocks.BOARD_SPACE_REDSTONE_ROUTER);
         BoardSpaceRedstoneRouterBlockEntity router = context.getBlockEntity(ROUTER);
-        ItemStack routerCartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
-        routerCartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(absolute.subList(0, ROUTED)), ""));
         BoardPerf.reset();
         start = System.nanoTime();
-        router.setStack(0, routerCartridge);
+        router.setTiles(absolute.subList(0, ROUTED));
         log("route 100 tiles", System.nanoTime() - start, 1);
 
         // The board graph (the Wrench's board view and the board check build it)

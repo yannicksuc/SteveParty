@@ -77,9 +77,9 @@ public abstract class CartridgeContainer extends Block implements BlockEntityPro
         return ItemActionResult.FAIL;
     }
 
-    /** Board spaces and routers: the Wrench opens them (or swaps their cartridge), the Tile Linker Brush paints their links. */
+    /** Board spaces: the Wrench opens them (or swaps their cartridge), the Tile Linker Brush paints their links. */
     public boolean isLinkedWithWrench() {
-        return this instanceof ABoardSpaceBlock || this instanceof BoardSpaceRedstoneRouterBlock;
+        return this instanceof ABoardSpaceBlock;
     }
 
     /** Opens the interface of this container for {@code player} (server side), e.g. a right click with the Wrench. */

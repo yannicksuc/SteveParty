@@ -542,7 +542,6 @@ public class StevepartyClient implements ClientModInitializer {
         HandledScreens.register(TILE_SCREEN_HANDLER, BoardSpaceScreen::new);
         HandledScreens.register(ModScreensHandlers.TRICHAUDRON_SCREEN_HANDLER,
                 TrichaudronScreen::new);
-        HandledScreens.register(ROUTER_SCREEN_HANDLER, RouterScreen::new);
         HandledScreens.register(HOP_SWITCH_SCREEN_HANDLER, HopSwitchScreen::new);
         HandledScreens.register(BOXED_TRADER_SCREEN_HANDLER, BoxedTraderScreen::new);
         HandledScreens.<MerchantScreenHandler, ShopStopScreen>register(

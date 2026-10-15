@@ -38,9 +38,6 @@ public class ModScreensHandlers {
             Registry.register(Registries.SCREEN_HANDLER, Steveparty.id("trichaudron"),
                     new ExtendedScreenHandlerType<>(TrichaudronScreenHandler::new, PacketCodecs.VAR_INT));
 
-    public static final ScreenHandlerType<RouterScreenHandler> ROUTER_SCREEN_HANDLER =
-            register("router_screen_handler", RouterScreenHandler::new, FeatureSet.empty());
-
     public static final ScreenHandlerType<CustomizableMerchantScreenHandler> BOXED_TRADER_SCREEN_HANDLER =
             register("boxed_trader_screen_handler", CustomizableMerchantScreenHandler::new, FeatureSet.empty());
 

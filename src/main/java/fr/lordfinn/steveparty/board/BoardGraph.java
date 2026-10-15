@@ -139,7 +139,7 @@ public final class BoardGraph {
                 nodes.put(node.pos(), node);
             } else if (blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity router) {
                 List<BlockPos> broken = new ArrayList<>();
-                for (BlockPos target : BoardLinks.links(router, 0)) {
+                for (BlockPos target : router.getTiles()) {
                     if (target(world, target) == Target.BROKEN) broken.add(target);
                 }
                 routers.add(new Router(router.getPos().toImmutable(), broken));

@@ -132,10 +132,7 @@ public class BoardSpaceGameTests implements SteveGameTest {
         context.setBlockState(router.down(), Blocks.STONE);
         context.setBlockState(router, ModBlocks.BOARD_SPACE_REDSTONE_ROUTER);
         BoardSpaceRedstoneRouterBlockEntity routerEntity = context.getBlockEntity(router);
-        ItemStack routerCartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
-        routerCartridge.set(ModComponents.DESTINATIONS_COMPONENT,
-                new DestinationsComponent(new ArrayList<>(List.of(context.getAbsolutePos(TILE))), ""));
-        routerEntity.setStack(0, routerCartridge);
+        routerEntity.setTiles(List.of(context.getAbsolutePos(TILE)));
 
         // The router's power selects the tile's cartridge
         context.setBlockState(router.east(), Blocks.REDSTONE_BLOCK);
@@ -153,22 +150,19 @@ public class BoardSpaceGameTests implements SteveGameTest {
     }
 
     @GameTest(templateName = EMPTY_STRUCTURE)
-    public void removingTileFromRouterCartridgeUnroutesIt(TestContext context) {
+    public void unlinkingTileFromRouterUnroutesIt(TestContext context) {
         BoardSpaceBlockEntity tile = placeTile(context);
         tile.setStack(15, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP));
 
         BlockPos router = new BlockPos(5, 1, 5);
         context.setBlockState(router, ModBlocks.BOARD_SPACE_REDSTONE_ROUTER);
         BoardSpaceRedstoneRouterBlockEntity routerEntity = context.getBlockEntity(router);
-        ItemStack routerCartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
-        routerCartridge.set(ModComponents.DESTINATIONS_COMPONENT,
-                new DestinationsComponent(new ArrayList<>(List.of(context.getAbsolutePos(TILE))), ""));
-        routerEntity.setStack(0, routerCartridge);
+        routerEntity.setTiles(List.of(context.getAbsolutePos(TILE)));
         context.setBlockState(router.east(), Blocks.REDSTONE_BLOCK);
         assertTile(context, tile, 15, BoardSpaceType.BOARD_SPACE_STOP);
 
-        // Taking the cartridge out of the router gives the tile back its own (unpowered) redstone
-        routerEntity.removeStack(0);
+        // Unlinking the tile from the router gives it back its own (unpowered) redstone
+        routerEntity.setTiles(List.of());
         assertTile(context, tile, 0, BoardSpaceType.DEFAULT);
         context.complete();
     }

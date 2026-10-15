@@ -641,7 +641,7 @@ public class CartridgeMenuGameTests implements SteveGameTest {
                 context.setBlockState(at, Blocks.AIR);
             }
 
-            for (Block block : List.of(ModBlocks.BOARD_SPACE_REDSTONE_ROUTER, ModBlocks.HOP_SWITCH)) {
+            for (Block block : List.of(ModBlocks.HOP_SWITCH)) {
                 context.setBlockState(at, block);
                 CartridgeContainerBlockEntity holder = context.getBlockEntity(at);
                 CartridgeContainerScreenHandler handler = (CartridgeContainerScreenHandler) holder.createMenu(10, player.getInventory(), player);

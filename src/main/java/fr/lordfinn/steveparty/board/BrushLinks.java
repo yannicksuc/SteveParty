@@ -74,6 +74,7 @@ public final class BrushLinks {
         PROVIDERS.add(ControllerStartLinks.PROVIDER);
         PROVIDERS.add(ControllerEndLinks.PROVIDER);
         PROVIDERS.add(MiniGameControllerLinks.PROVIDER);
+        PROVIDERS.add(RouterLinks.PROVIDER);
     }
 
     /** Another kind of links the brush paints (an addon's holder or cartridge). */
@@ -90,7 +91,8 @@ public final class BrushLinks {
 
     private static boolean isHolder(@Nullable BlockEntity blockEntity) {
         return blockEntity instanceof CartridgeContainerBlockEntity || blockEntity instanceof PartyControllerEntity
-                || blockEntity instanceof StepControllerBlockEntity || blockEntity instanceof MiniGameControllerBlockEntity;
+                || blockEntity instanceof StepControllerBlockEntity || blockEntity instanceof MiniGameControllerBlockEntity
+                || blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity;
     }
 
     /**
@@ -102,7 +104,8 @@ public final class BrushLinks {
         BlockEntity blockEntity = world.getBlockEntity(resolved);
         if (blockEntity instanceof CartridgeContainerBlockEntity container) return held(world, resolved, BoardLinks.slotOf(container, level));
         if (blockEntity instanceof PartyControllerEntity) return held(world, resolved, BANK);
-        if (blockEntity instanceof StepControllerBlockEntity || blockEntity instanceof MiniGameControllerBlockEntity) return held(world, resolved, 0);
+        if (blockEntity instanceof StepControllerBlockEntity || blockEntity instanceof MiniGameControllerBlockEntity
+                || blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity) return held(world, resolved, 0);
         return null;
     }
 
@@ -128,6 +131,11 @@ public final class BrushLinks {
             BlockPos at = pos.toImmutable();
             return new Held(at, 0, ItemStack.EMPTY, () -> { },
                     player -> MiniGamePages.canEdit(player) && ScreenHandlerChecks.canBuildAt(player, at));
+        }
+        if (blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity && slot == 0) {
+            // No cartridge: its board spaces are kept by the block itself (see RouterLinks)
+            BlockPos at = pos.toImmutable();
+            return new Held(at, 0, ItemStack.EMPTY, () -> { }, player -> ScreenHandlerChecks.canBuildAt(player, at));
         }
         if (blockEntity instanceof StepControllerBlockEntity && slot == 0) {
             // No cartridge: its link is kept by the block itself
@@ -273,12 +281,12 @@ public final class BrushLinks {
     // ---------------------------------------------------------------- what the built-in kinds need
 
     static boolean isBoardHolder(BlockEntity blockEntity) {
-        return blockEntity instanceof BoardSpaceBlockEntity || blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity;
+        return blockEntity instanceof BoardSpaceBlockEntity;
     }
 
-    /** The holders whose Inventory Cartridge's containers mean nothing (a router routes power, a Hop Switch switches blocks). */
+    /** The holders whose Inventory Cartridge's containers mean nothing (a Hop Switch switches blocks). */
     static boolean usesContainers(BlockEntity blockEntity) {
-        return !(blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity) && !(blockEntity instanceof HopSwitchBlockEntity);
+        return !(blockEntity instanceof HopSwitchBlockEntity);
     }
 
     static boolean isCartridge(ItemStack stack) {

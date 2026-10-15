@@ -51,7 +51,7 @@ public final class LinkHistory {
     public static final int MAX = 32;
 
     /** One undoable change in the world. */
-    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange, PageLinksChange, PipePageChange, EventPipesChange {
+    public sealed interface Change permits LinksChange, RotationChange, ChestChange, SpawnChange, NestChange, BlockChange, StepLinkChange, StartLinksChange, ControllerLinksChange, TeleportChange, PageLinksChange, PipePageChange, EventPipesChange, RouterLinksChange {
         /** Puts {@code from} back to {@code to} if the world still shows {@code from}; false if it changed since. */
         boolean apply(ServerWorld world, boolean undo);
 
@@ -196,6 +196,17 @@ public final class LinkHistory {
             if (!(world.getBlockEntity(pos) instanceof MiniGamePipeBlockEntity pipe)
                     || !Objects.equals(MiniGamePages.idOf(pipe.getPage()), MiniGamePages.idOf(undo ? after : before))) return false;
             pipe.setPage((undo ? before : after).copy());
+            return true;
+        }
+    }
+
+    /** The board spaces an Aiguilleur (router) drives, see {@link RouterLinks}. */
+    public record RouterLinksChange(BlockPos pos, List<BlockPos> before, List<BlockPos> after) implements Change {
+        @Override
+        public boolean apply(ServerWorld world, boolean undo) {
+            if (!(world.getBlockEntity(pos) instanceof fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity router)
+                    || !router.getTiles().equals(undo ? after : before)) return false;
+            router.setTiles(undo ? before : after);
             return true;
         }
     }
