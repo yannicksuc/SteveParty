@@ -123,7 +123,10 @@ public class PartyAntennaRenderer extends GeoBlockRenderer<PartyBellBlockEntity>
         return true;
     }
 
-    /** The head's yaw in its item: the dish three quarters toward the viewer in the inventory, catching the light. */
+    /**
+     * The head's yaw in its item: three quarters, its lit outer cloth toward the inventory's light and its red receiver
+     * at the side (seen from the front, the dish's shaded inside reads as a dark square).
+     */
     private static final float ITEM_YAW = 0;
     private static PartyAntennaRenderer itemRenderer;
     private static PartyBellBlockEntity itemAntenna;

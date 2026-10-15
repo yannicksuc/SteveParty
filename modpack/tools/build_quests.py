@@ -654,8 +654,8 @@ q("step", 4, -1.5, I("step_controller"), deps=["controller"], rewards=T2(),
 q("bell", 4, -4, I("party_bell"), deps=["controller"], rewards=T2(),
   desc=(["Right-click: pick a moment (party start, turn start, die rolled, mini-game end...). It pulses then, and a comparator reads a value (die result, rank...).",
          "Wait mode (Wrench): the party freezes until the antenna gets a signal."],
-        ["Clic droit : choisis un moment (début de Party, de manche, de tour, dé lancé, fin de mini-jeu...). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...).",
-         "Mode attente (Clé à molette) : la Party se fige jusqu'à ce qu'elle reçoive un signal."]))
+        ["Clic droit : choisis un moment (début de partie, de manche, de tour, dé lancé, fin de mini-jeu...). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...).",
+         "Mode attente (Clé à molette) : la partie se fige jusqu'à ce qu'elle reçoive un signal."]))
 
 q("piggy", 4, -2.75, I("piggy_bank"), deps=["controller", "board.inventory"], rewards=T2(),
   desc=(["A ceramic pig with an Inventory Cartridge. Each pulse gives (or takes) its items: player of the turn, mini-game winners, everyone or the nearest.",

@@ -129,8 +129,8 @@
 	]
 	quest.02E3D80EBC49D590.title: "Tout en douceur"
 	quest.030135F1CA2F65E1.quest_desc: [
-		"Clic droit : choisis un moment (début de Party, de manche, de tour, dé lancé, fin de mini-jeu...). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...)."
-		"Mode attente (Clé à molette) : la Party se fige jusqu'à ce qu'elle reçoive un signal."
+		"Clic droit : choisis un moment (début de partie, de manche, de tour, dé lancé, fin de mini-jeu...). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...)."
+		"Mode attente (Clé à molette) : la partie se fige jusqu'à ce qu'elle reçoive un signal."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.030135F1CA2F65E1.title: "Antenne de Party"
