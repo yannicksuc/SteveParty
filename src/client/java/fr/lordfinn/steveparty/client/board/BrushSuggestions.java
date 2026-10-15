@@ -16,7 +16,14 @@ import fr.lordfinn.steveparty.client.blockentity.SpawnBubbleRenderer;
 import fr.lordfinn.steveparty.client.gui.wheel.ToolWheel;
 import fr.lordfinn.steveparty.client.utils.GhostModels;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeContainers;
+import fr.lordfinn.steveparty.blocks.ModBlocks;
+import fr.lordfinn.steveparty.blocks.custom.MagpieNestBlock;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.Camera;
@@ -50,12 +57,15 @@ import java.util.Set;
  *     <li>the Party Controller: to the start tiles around not linked to it; and, its bank linking no container, to the
  *     nearest chest, or to a ghost chest 1 to 2 blocks away when there is none;</li>
  *     <li>a mob space whose cartridge links no Spawn Bubble: a ghost bubble where its mob appears by default (beside the
- *     space, on the right of the way its token goes).</li>
+ *     space, on the right of the way its token goes);</li>
+ *     <li>a Common pot space whose cartridge links no Magpie Nest: a ghost nest 2 blocks (else 1) beside it, facing
+ *     it.</li>
  * </ul>
  * Worked out when the aimed block or the board changes (or once a second), never per frame. Drawn by
  * {@link BrushOverlay} in its pass (LAST, entity buffers drawn at the end of the hook), like the brush's own ghost
  * tiles: thin see-through arrows writing no depth that is relied on. The ghost chest and bubble are models, asked for
- * from GhostModels (nearest faces only, seen through water and glass: see the minecraft-rendering skill).
+ * from GhostModels (nearest faces only, seen through water and glass: see the minecraft-rendering skill), the ghost
+ * nest too (its block model; its pile and long twig, drawn by its block entity, left out).
  */
 final class BrushSuggestions {
     /** The grey of the suggestions, and how see-through their arrows are. */
@@ -69,8 +79,13 @@ final class BrushSuggestions {
     private static final int BUBBLE_SIDE = 2;
 
     /** A ghost link from a block to another, and the ghost blocks drawn at their end. */
-    private record Suggestion(List<Vec3d[]> links, @Nullable BlockPos chest, Direction chestFacing, @Nullable Vec3d bubble, @Nullable Vec3d bubbleFrom) {
-        static final Suggestion NONE = new Suggestion(List.of(), null, Direction.SOUTH, null, null);
+    private record Suggestion(List<Vec3d[]> links, @Nullable BlockPos chest, Direction chestFacing, @Nullable Vec3d bubble, @Nullable Vec3d bubbleFrom,
+                              @Nullable BlockPos nest, Direction nestFacing) {
+        static final Suggestion NONE = new Suggestion(List.of(), null, Direction.SOUTH, null, null, null, Direction.NORTH);
+
+        Suggestion(List<Vec3d[]> links, @Nullable BlockPos chest, Direction chestFacing, @Nullable Vec3d bubble, @Nullable Vec3d bubbleFrom) {
+            this(links, chest, chestFacing, bubble, bubbleFrom, null, Direction.NORTH);
+        }
     }
 
     private static Suggestion current = Suggestion.NONE;
@@ -107,17 +122,25 @@ final class BrushSuggestions {
         Vec3d from = BrushOverlay.anchor(world, space.getPos());
         List<BrushLinkable> kinds = BrushLinks.of(world, space.getPos(), level);
         Vec3d bubble = null;
+        BlockPos nest = null;
         // An empty tile has no cartridge yet (the brush gives it one): it links nothing either
         boolean linksNothing = true;
         for (BrushLinkable kind : kinds) {
             if (kind instanceof CartridgeLinks.BoardPaths paths && !paths.targets(world).isEmpty()) linksNothing = false;
             else if (kind instanceof CartridgeLinks.SpawnPoint spawn && spawn.targets(world).isEmpty()) bubble = defaultMobSpot(world, space);
+            else if (kind instanceof CartridgeLinks.PotNest pot && pot.targets(world).isEmpty()) nest = ghostSpot(world, space.getPos());
         }
         if (linksNothing) {
             BlockPos tile = nearestFreeTile(world, space.getPos());
             if (tile != null) links.add(new Vec3d[]{from, BrushOverlay.anchor(world, tile)});
         }
-        return new Suggestion(links, null, Direction.SOUTH, bubble, bubble == null ? null : from);
+        // The ghost nest faces its space, linked to it as the real one would be
+        Direction nestFacing = Direction.NORTH;
+        if (nest != null) {
+            links.add(new Vec3d[]{from, Vec3d.ofCenter(nest)});
+            nestFacing = Direction.getFacing(space.getPos().getX() - nest.getX(), 0, space.getPos().getZ() - nest.getZ());
+        }
+        return new Suggestion(links, null, Direction.SOUTH, bubble, bubble == null ? null : from, nest, nestFacing);
     }
 
     /**
@@ -162,7 +185,7 @@ final class BrushSuggestions {
         BlockPos ghostChest = null;
         if (bankWithoutContainer(world, pos)) {
             BlockPos chest = nearestChest(world, pos);
-            BlockPos to = chest != null ? chest : (ghostChest = ghostChestSpot(world, pos));
+            BlockPos to = chest != null ? chest : (ghostChest = ghostSpot(world, pos));
             if (to != null) links.add(new Vec3d[]{BrushOverlay.sideOf(pos, from.y, Vec3d.ofCenter(to)), Vec3d.ofCenter(to)});
         }
         // The ghost chest opens toward the controller
@@ -204,11 +227,11 @@ final class BrushSuggestions {
         return best;
     }
 
-    /** Where a ghost chest is shown: a free cell on solid ground 2 blocks from the controller, else 1. */
-    private static @Nullable BlockPos ghostChestSpot(ClientWorld world, BlockPos controller) {
+    /** Where a ghost chest (or nest) is shown: a free cell on solid ground 2 blocks from the block, else 1. */
+    private static @Nullable BlockPos ghostSpot(ClientWorld world, BlockPos from) {
         for (int distance : new int[]{2, 1}) {
             for (Direction side : Direction.Type.HORIZONTAL) {
-                BlockPos spot = controller.offset(side, distance);
+                BlockPos spot = from.offset(side, distance);
                 if (world.getBlockState(spot).isReplaceable() && world.getBlockState(spot.down()).isSolidBlock(world, spot.down())) return spot;
             }
         }
@@ -274,6 +297,7 @@ final class BrushSuggestions {
         if (suggestion == Suggestion.NONE || ToolWheel.isOpen()) return;
         float pulse = 0.75f + 0.25f * (float) Math.sin((world.getTime() + tickDelta) / 6.0);
         if (suggestion.chest() != null) ghostChest(suggestion.chest(), suggestion.chestFacing(), GHOST_ALPHA * pulse);
+        if (suggestion.nest() != null) ghostNest(suggestion.nest(), suggestion.nestFacing(), GHOST_ALPHA * pulse);
         if (suggestion.bubble() != null) {
             // A Spawn Bubble's ghost: the real one at rest, see-through, facing the camera (as one placed)
             Vec3d at = suggestion.bubble(), cam = camera.getPos();
@@ -284,6 +308,18 @@ final class BrushSuggestions {
 
     /** How see-through the ghost chest and the ghost bubble are (their models in their own colours, before the pulse). */
     private static final float GHOST_ALPHA = 0.5f;
+
+    /** A ghost Magpie Nest: its block model at {@code pos}, see-through (nearest faces only), facing {@code facing}. */
+    private static void ghostNest(BlockPos pos, Direction facing, float alpha) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        BlockState state = ModBlocks.MAGPIE_NEST.getDefaultState().with(MagpieNestBlock.FACING, facing);
+        GhostModels.request(Vec3d.of(pos), Vec3d.ofCenter(pos), alpha, true, (matrices, buffers) -> {
+            BakedModel model = client.getBlockRenderManager().getModel(state);
+            client.getBlockRenderManager().getModelRenderer().render(matrices.peek(),
+                    buffers.getBuffer(RenderLayer.getEntityCutout(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE)), state, model, 1, 1, 1,
+                    LightmapTextureManager.MAX_LIGHT_COORDINATE, OverlayTexture.DEFAULT_UV);
+        }, null);
+    }
 
     /**
      * A ghost chest: a chest's hologram (one cube and its latch, GhostModels#CHEST), see-through, at

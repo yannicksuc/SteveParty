@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
+import fr.lordfinn.steveparty.board.LinkedParty;
 import fr.lordfinn.steveparty.entities.custom.frousseux.FrousseuxEntity;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.PotCartridgeItem;
@@ -21,10 +22,12 @@ import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -72,9 +75,14 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
     public static final int SHOWN_KINDS = 64;
     /** How often a linked nest checks its pot space is still a pot. */
     private static final int LINK_CHECK_INTERVAL = 40;
+    /** How long the party of its pot space is kept before it is looked for again (ticks). */
+    private static final int PARTY_REFRESH_TICKS = 20;
     private static final Map<RegistryKey<World>, Set<BlockPos>> LOADED = ServerMemory.forgetOnStop(new HashMap<>());
 
     private @Nullable BlockPos pot;
+    /** The party of its pot space, as last found ({@link #potParty}). */
+    private @Nullable PartyControllerEntity potParty;
+    private long potPartyAt = Long.MIN_VALUE;
     /** Its own things (on its own, not linked), a kind a slot, up to {@link #SLOT_LIMIT} each. */
     private final DefaultedList<ItemStack> slots = DefaultedList.ofSize(SLOTS, ItemStack.EMPTY);
     /** What did not fit in its slots when an old nest was moved into them: falls at its first tick. */
@@ -259,13 +267,26 @@ public class MagpieNestBlockEntity extends SyncedBlockEntity implements Inventor
         return shown;
     }
 
-    /** A coin for this nest: the mod's coin, or (linked to a pot) the coin of the nearest party. */
+    /** A coin for this nest: the mod's coin, or (linked to a pot) the coin of its pot space's party. */
     public boolean isCoin(ItemStack stack) {
         if (stack.isOf(ModItems.COIN)) return true;
-        if (!isLinked() || world == null || stack.isEmpty()) return false;
-        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, pos, PartyBellBlockEntity.RANGE, false)
-                .map(party -> ItemStack.areItemsAndComponentsEqual(party.getCurrency(PartyCurrency.COIN), stack))
-                .orElse(false);
+        if (!isLinked() || stack.isEmpty()) return false;
+        PartyControllerEntity party = potParty();
+        return party != null && ItemStack.areItemsAndComponentsEqual(party.getCurrency(PartyCurrency.COIN), stack);
+    }
+
+    /**
+     * The party of its pot space (the board element it is linked to, see {@link LinkedParty}): found again at most
+     * every {@link #PARTY_REFRESH_TICKS}; null on its own, client side or for none.
+     */
+    private @Nullable PartyControllerEntity potParty() {
+        if (pot == null || !(world instanceof ServerWorld serverWorld)) return null;
+        long now = serverWorld.getTime();
+        if (potParty == null || potParty.isRemoved() || now - potPartyAt >= PARTY_REFRESH_TICKS || now < potPartyAt) {
+            potParty = LinkedParty.of(serverWorld, GlobalPos.create(serverWorld.getRegistryKey(), pot), false).playingParty();
+            potPartyAt = now;
+        }
+        return potParty;
     }
 
     /** A shiny thing it takes (not a coin). */

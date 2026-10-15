@@ -167,6 +167,31 @@ public class PotGameTests implements SteveGameTest {
         return controller;
     }
 
+    // ---------------------------------------------------------------- the party's coin
+
+    /**
+     * The party's coin is a coin for the nest of its pot space (the party found through the space, never the nearest
+     * one around); a nest no pot links knows the mod's coin only.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "pot_party_coin")
+    public void theNestKnowsTheCoinOfItsPotSpacesParty(TestContext context) {
+        Board board = board(context, pot(2));
+        PartyControllerEntity controller = party(context, board);
+        context.assertTrue(controller.setCurrency(PartyCurrency.COIN, new ItemStack(Items.GOLD_NUGGET)), "coins: gold nuggets");
+        BlockPos alone = NEST.add(2, 0, 0);
+        context.setBlockState(alone.down(), Blocks.STONE);
+        context.setBlockState(alone, ModBlocks.MAGPIE_NEST);
+        MagpieNestBlockEntity lone = context.getBlockEntity(alone);
+        // As its pot space does when it first acts on it
+        board.nest().link(board.pot().getPos());
+        context.waitAndRun(21, () -> {
+            context.assertTrue(board.nest().isCoin(new ItemStack(Items.GOLD_NUGGET)), "the pot's nest: the party's coin");
+            context.assertTrue(board.nest().isCoin(new ItemStack(ModItems.COIN)), "and the mod's coin");
+            context.assertTrue(!lone.isCoin(new ItemStack(Items.GOLD_NUGGET)), "a nest on its own: not a coin");
+            context.complete();
+        });
+    }
+
     // ---------------------------------------------------------------- stakes
 
     /** Passing over the pot: the stake goes into the nest (stake 2: 5 coins → 3, the nest 0 → 2). */
