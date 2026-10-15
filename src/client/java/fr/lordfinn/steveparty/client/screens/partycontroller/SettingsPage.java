@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.screens.partycontroller;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData.Phase;
+import fr.lordfinn.steveparty.client.gui.ButtonIcons;
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -66,7 +67,7 @@ public final class SettingsPage {
                 ConsoleButton.Kind.SCREEN, null, () -> {
                     handler().setDiceOpen(!handler().isDiceOpen());
                     dashboard.rebuild();
-                }).decoration((context, button) -> chevron(context, button, !open)));
+                }).symbol(open ? ButtonIcons.Icon.UP : ButtonIcons.Icon.DOWN));
         toggle.setTooltip(Tooltip.of(open ? Text.translatable(KEY + "settings.allowed_dice.close")
                 : Text.translatable(KEY + "settings.allowed_dice.open", handler().allowedDiceCount(), PartyControllerEntity.MAX_ALLOWED_DICE)));
         if (open) return;
@@ -74,9 +75,9 @@ public final class SettingsPage {
         boolean editable = data.canEdit() && data.phase() != Phase.RUNNING;
         Text why = !data.canEdit() ? Text.translatable(KEY + "locked") : Text.translatable(KEY + "settings.rounds.running");
         ConsoleButton minus = dashboard.add(new ConsoleButton(sx, rowY, STEP, STEP, Text.literal("-"), ConsoleButton.Kind.SCREEN, null,
-                () -> dashboard.click(BUTTON_ROUNDS_DOWN, Screen.hasShiftDown() ? 5 : 1)));
+                () -> dashboard.click(BUTTON_ROUNDS_DOWN, Screen.hasShiftDown() ? 5 : 1)).symbol(ButtonIcons.Icon.MINUS));
         ConsoleButton plus = dashboard.add(new ConsoleButton(sx + 52, rowY, STEP, STEP, Text.literal("+"), ConsoleButton.Kind.SCREEN, null,
-                () -> dashboard.click(BUTTON_ROUNDS_UP, Screen.hasShiftDown() ? 5 : 1)));
+                () -> dashboard.click(BUTTON_ROUNDS_UP, Screen.hasShiftDown() ? 5 : 1)).symbol(ButtonIcons.Icon.PLUS));
         minus.active = editable && data.roundsSetting() > PartyControllerEntity.MIN_ROUNDS;
         plus.active = editable && data.roundsSetting() < PartyControllerEntity.MAX_ROUNDS;
         minus.setTooltip(Tooltip.of(editable ? Text.translatable(KEY + "settings.rounds.less") : why));
@@ -93,23 +94,13 @@ public final class SettingsPage {
         // The power-ups a player may carry (0: no limit)
         int limitY = y + SETTINGS_Y + 2 * SETTINGS_ROW + 1;
         ConsoleButton fewer = dashboard.add(new ConsoleButton(sx, limitY, STEP, STEP, Text.literal("-"), ConsoleButton.Kind.SCREEN, null,
-                () -> dashboard.click(BUTTON_MAX_POWER_UPS_DOWN, 1)));
+                () -> dashboard.click(BUTTON_MAX_POWER_UPS_DOWN, 1)).symbol(ButtonIcons.Icon.MINUS));
         ConsoleButton more = dashboard.add(new ConsoleButton(sx + 52, limitY, STEP, STEP, Text.literal("+"), ConsoleButton.Kind.SCREEN, null,
-                () -> dashboard.click(BUTTON_MAX_POWER_UPS_UP, 1)));
+                () -> dashboard.click(BUTTON_MAX_POWER_UPS_UP, 1)).symbol(ButtonIcons.Icon.PLUS));
         fewer.active = data.canEdit() && data.maxPowerUps() > 0;
         more.active = data.canEdit() && data.maxPowerUps() < PowerUpLimit.MAX;
         fewer.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.max_powerups.less") : Text.translatable(KEY + "locked")));
         more.setTooltip(Tooltip.of(data.canEdit() ? Text.translatable(KEY + "settings.max_powerups.more") : Text.translatable(KEY + "locked")));
-    }
-
-    /** The toggle's chevron: down to open the panel, up to close it. */
-    private static void chevron(DrawContext context, ConsoleButton button, boolean down) {
-        int cx = button.getX() + 4, cy = button.getY() + 6;
-        int colour = button.isHovered() ? WHITE : INK;
-        for (int row = 0; row < 4; row++) {
-            int r = down ? row : 3 - row;
-            context.fill(cx + r, cy + row, cx + 7 - r, cy + row + 1, colour);
-        }
     }
 
     // ------------------------------------------------------------------ drawing

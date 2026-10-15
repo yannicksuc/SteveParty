@@ -1,6 +1,7 @@
 package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.client.gui.HandCursor;
+import fr.lordfinn.steveparty.client.gui.ButtonIcons;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.StallArt;
@@ -63,7 +64,7 @@ public class ShopStallScreen extends HandledScreen<ShopStallScreenHandler> {
             if (client != null && client.interactionManager != null)
                 client.interactionManager.clickButton(handler.syncId, ShopStallScreenHandler.BACK);
         });
-        back.setTooltip(Tooltip.of(Text.translatable(KEY + "back")));
+        back.icon(ButtonIcons.Icon.BACK).setTooltip(Tooltip.of(Text.translatable(KEY + "back")));
         addDrawableChild(back);
     }
 

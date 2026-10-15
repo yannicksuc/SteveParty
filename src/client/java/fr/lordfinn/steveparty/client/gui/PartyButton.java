@@ -51,6 +51,17 @@ public class PartyButton extends PressableWidget {
         return this;
     }
 
+    /**
+     * Its content is one of the mod's button icons ({@link ButtonIcons}), in the colour of its face, still when pushed
+     * in; white with the font's shadow on the green face.
+     */
+    public PartyButton icon(ButtonIcons.Icon icon) {
+        this.steady = true;
+        this.content = (context, textRenderer, centerX, centerY, color) ->
+                ButtonIcons.drawCentred(context, icon, centerX, centerY, color, active && style == Style.PRIMARY && !selected);
+        return this;
+    }
+
     /** Pixels on the right a too long label leaves free (for a badge on the button's corner). */
     private int reservedRight;
 
@@ -89,7 +100,7 @@ public class PartyButton extends PressableWidget {
         PartyGui.button(context, x, y, w, h, theme, pressedIn);
         if (highlighted) context.drawBorder(x, y, w, h, 0xFFFFFFFF);
 
-        int textColor = !active ? 0xFF6E6E6E
+        int textColor = !active ? PartyGui.DISABLED_INK
                 : selected ? 0xFF4A2C00
                 : style == Style.PRIMARY ? 0xFFFFFFFF
                 : 0xFF2E2E2E;

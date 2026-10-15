@@ -2,7 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity.Comparator;
-import fr.lordfinn.steveparty.client.gui.ComparisonGlyphs;
+import fr.lordfinn.steveparty.client.gui.ButtonIcons;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -11,7 +11,6 @@ import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.GoalPolePayload;
 import fr.lordfinn.steveparty.screen_handlers.custom.GoalPoleScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -91,7 +90,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         int cx = x + (WIDTH - rowWidth) / 2;
         for (Comparator c : ORDER) {
             PartyButton button = new PartyButton(cx, y + cmpY, CMP_SIZE, CMP_HEIGHT, symbolName(c), b -> selectComparator(c))
-                    .steady().content((context, textRenderer, centerX, centerY, color) -> drawSymbol(context, textRenderer, c, centerX, centerY, color));
+                    .icon(icon(c));
             comparatorButtons.add(addDrawableChild(button));
             cx += CMP_SIZE + CMP_GAP;
         }
@@ -99,10 +98,10 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         int fieldX = x + 16 + STEP_SIZE + 4;
         int fieldWidth = WIDTH - 2 * (16 + STEP_SIZE + 4);
         addDrawableChild(new PartyButton(x + 16, y + valueY, STEP_SIZE, FIELD_HEIGHT, Text.literal("-"), b -> nudge(-1))
-                .content(GoalPoleScreen::drawMinus))
+                .icon(ButtonIcons.Icon.MINUS))
                 .setTooltip(Tooltip.of(Text.translatable(KEY + "decrease")));
         addDrawableChild(new PartyButton(x + WIDTH - 16 - STEP_SIZE, y + valueY, STEP_SIZE, FIELD_HEIGHT, Text.literal("+"), b -> nudge(1))
-                .content(GoalPoleScreen::drawPlus))
+                .icon(ButtonIcons.Icon.PLUS))
                 .setTooltip(Tooltip.of(Text.translatable(KEY + "increase")));
 
         valueField = new TextFieldWidget(textRenderer, fieldX + 5, y + valueY + 6, fieldWidth - 10, 10, Text.translatable(KEY + "value"));
@@ -269,24 +268,15 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         return Text.translatable(KEY + "comparator." + key(c), "");
     }
 
-    /** Comparison symbols at twice the font size, from the shared pixel set ({@link ComparisonGlyphs}). */
-    private static void drawSymbol(DrawContext context, TextRenderer textRenderer, Comparator c, int centerX, int centerY, int color) {
-        ComparisonGlyphs.drawCentred(context, switch (c) {
-            case LESS -> ComparisonGlyphs.Sign.LESS;
-            case LESS_OR_EQUAL -> ComparisonGlyphs.Sign.LESS_OR_EQUAL;
-            case EQUAL -> ComparisonGlyphs.Sign.EQUAL;
-            case GREATER_OR_EQUAL -> ComparisonGlyphs.Sign.GREATER_OR_EQUAL;
-            case GREATER -> ComparisonGlyphs.Sign.GREATER;
-        }, centerX, centerY, color, 2);
-    }
-
-    private static void drawMinus(DrawContext context, TextRenderer textRenderer, int centerX, int centerY, int color) {
-        context.fill(centerX - 4, centerY - 1, centerX + 4, centerY + 1, color);
-    }
-
-    private static void drawPlus(DrawContext context, TextRenderer textRenderer, int centerX, int centerY, int color) {
-        drawMinus(context, textRenderer, centerX, centerY, color);
-        context.fill(centerX - 1, centerY - 4, centerX + 1, centerY + 4, color);
+    /** The comparison's sign, from the mod's button icons. */
+    private static ButtonIcons.Icon icon(Comparator c) {
+        return switch (c) {
+            case LESS -> ButtonIcons.Icon.LESS;
+            case LESS_OR_EQUAL -> ButtonIcons.Icon.LESS_OR_EQUAL;
+            case EQUAL -> ButtonIcons.Icon.EQUAL;
+            case GREATER_OR_EQUAL -> ButtonIcons.Icon.GREATER_OR_EQUAL;
+            case GREATER -> ButtonIcons.Icon.GREATER;
+        };
     }
 
     // ------------------------------------------------------------------ input

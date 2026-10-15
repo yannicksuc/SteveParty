@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.screens.partycontroller;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyDashboardData;
+import fr.lordfinn.steveparty.client.gui.ButtonIcons;
 import fr.lordfinn.steveparty.client.gui.ConsoleButton;
 import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.HitArea;
@@ -49,9 +50,9 @@ public final class GainsPage {
                 int amount = data.gains().amount(currency, row);
                 int less = gainButton(row, currency, false), more = gainButton(row, currency, true);
                 ConsoleButton minus = dashboard.add(new ConsoleButton(left, top, STEP, STEP, Text.literal("-"), ConsoleButton.Kind.SCREEN, null,
-                        () -> dashboard.click(less, Screen.hasShiftDown() ? 5 : 1)));
+                        () -> dashboard.click(less, Screen.hasShiftDown() ? 5 : 1)).symbol(ButtonIcons.Icon.MINUS));
                 ConsoleButton plus = dashboard.add(new ConsoleButton(left + GAINS_COLUMN - STEP, top, STEP, STEP, Text.literal("+"), ConsoleButton.Kind.SCREEN, null,
-                        () -> dashboard.click(more, Screen.hasShiftDown() ? 5 : 1)));
+                        () -> dashboard.click(more, Screen.hasShiftDown() ? 5 : 1)).symbol(ButtonIcons.Icon.PLUS));
                 minus.active = data.canEdit() && amount > 0;
                 plus.active = data.canEdit() && amount < MiniGameGains.MAX;
                 Text why = data.canEdit() ? Text.translatable(KEY + "gains.step") : Text.translatable(KEY + "locked");

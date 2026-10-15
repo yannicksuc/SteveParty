@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerSettings;
+import fr.lordfinn.steveparty.client.gui.ButtonIcons;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.entities.ModEntities;
@@ -69,14 +70,14 @@ public class SpawnMarkerScreen extends Screen {
         onLanding.setTooltip(Tooltip.of(Text.translatable(K + whenShown + ".hint")));
         always.setTooltip(Tooltip.of(Text.translatable(K + (star ? "resident.star_hint" : "resident.hint"))));
         liftY = y + 20 + 6 + (liftRow - 20) / 2;
-        addDrawableChild(new PartyButton(right - 70, liftY, 20, 20, Text.literal("-"), b -> step(-1)))
+        addDrawableChild(new PartyButton(right - 70, liftY, 20, 20, Text.literal("-"), b -> step(-1)).icon(ButtonIcons.Icon.MINUS))
                 .setTooltip(Tooltip.of(Text.translatable(K + "lift.hint")));
-        addDrawableChild(new PartyButton(right - 20, liftY, 20, 20, Text.literal("+"), b -> step(1)))
+        addDrawableChild(new PartyButton(right - 20, liftY, 20, 20, Text.literal("+"), b -> step(1)).icon(ButtonIcons.Icon.PLUS))
                 .setTooltip(Tooltip.of(Text.translatable(K + "lift.hint")));
         turnY = liftY + 20 + (liftRow - 20) / 2 + 6 + (turnRow - 20) / 2;
-        addDrawableChild(new PartyButton(right - 70, turnY, 20, 20, Text.literal("<"), b -> turn(-1)))
+        addDrawableChild(new PartyButton(right - 70, turnY, 20, 20, Text.literal("<"), b -> turn(-1)).icon(ButtonIcons.Icon.PREV))
                 .setTooltip(Tooltip.of(Text.translatable(K + "turn.left")));
-        addDrawableChild(new PartyButton(right - 20, turnY, 20, 20, Text.literal(">"), b -> turn(1)))
+        addDrawableChild(new PartyButton(right - 20, turnY, 20, 20, Text.literal(">"), b -> turn(1)).icon(ButtonIcons.Icon.NEXT))
                 .setTooltip(Tooltip.of(Text.translatable(K + "turn.right")));
         refresh();
     }

@@ -28,13 +28,14 @@ import java.util.Map;
 /**
  * What shows a Party Antenna's moments: an item of the game for each (the item says what, the button's colour says the
  * family), with a small badge where the item alone does not say it (a gain, a loss, a stop, done). The badges and the
- * screen's controls come from {@code antenna_icons.png} (16 x 16 cells: badges 0-3, controls from 32).
+ * hourglass come from {@code antenna_icons.png} (16 x 16 cells: badges 0-3, the hourglass 33); the screen's keys use
+ * the mod's button icons.
  */
 public final class AntennaIcons {
     public static final Identifier SHEET = Steveparty.id("textures/gui/antenna_icons.png");
     public static final int BADGE_PLUS = 0, BADGE_MINUS = 1, BADGE_CHECK = 3;
-    /** The hourglass, and the same off (grey sand): the screen's hold toggle. */
-    public static final int WAIT_OFF = 32, WAIT = 33, MINUS = 38, PLUS = 39, TEST = 40;
+    /** The hourglass: a moment that holds the party (the last heard one, the world panel). */
+    public static final int WAIT = 33;
 
     /**
      * Its item, its badge (-1: none), a size for an item drawn small in its own icon (the die), and whether it is lit
