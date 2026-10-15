@@ -162,7 +162,7 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
         PartyMoment moment = state.get(MOMENT);
         boolean waiting = state.get(WAITING) && moment.canWait();
         Text mode = waiting
-                ? Text.translatableWithFallback("message.steveparty.party_bell.waiting", "waits for a signal").formatted(Formatting.GOLD)
+                ? Text.translatableWithFallback("message.steveparty.party_bell.waiting", "party waits").formatted(Formatting.GOLD)
                 : Text.translatableWithFallback("message.steveparty.party_bell.simple", "pulse").formatted(Formatting.GREEN);
         MessageUtils.sendToPlayer(serverPlayer, Text.translatableWithFallback("message.steveparty.party_bell.mode",
                         "Party Antenna: %1$s (%2$s) - comparator: %3$s",

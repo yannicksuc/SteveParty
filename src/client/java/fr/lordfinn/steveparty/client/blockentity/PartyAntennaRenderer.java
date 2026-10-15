@@ -34,7 +34,7 @@ import software.bernie.geckolib.renderer.GeoBlockRenderer;
 public class PartyAntennaRenderer extends GeoBlockRenderer<PartyBellBlockEntity> {
     private static final String HEAD = "tete", DISH = "parabole", RECEIVER = "recepteur", GLOW = "recepteur_lueur";
     /** The receiver at rest: its light red tip darkened. */
-    private static final int DARK = 0xFF8A2E2E;
+    private static final int DARK = 0xFF642020;
     /** The dish's pulse: how much it grows, for how long (ticks). */
     private static final float PULSE = 0.12f, PULSE_TICKS = 6;
     /** The red head shows for this long after a catch (ticks); the tip then fades back to dark. */
@@ -123,8 +123,8 @@ public class PartyAntennaRenderer extends GeoBlockRenderer<PartyBellBlockEntity>
         return true;
     }
 
-    /** The head's yaw in its item: the dish toward the viewer in the inventory, turned a little to show its rim. */
-    private static final float ITEM_YAW = -20 * MathHelper.RADIANS_PER_DEGREE;
+    /** The head's yaw in its item: the dish three quarters toward the viewer in the inventory, catching the light. */
+    private static final float ITEM_YAW = 0;
     private static PartyAntennaRenderer itemRenderer;
     private static PartyBellBlockEntity itemAntenna;
 

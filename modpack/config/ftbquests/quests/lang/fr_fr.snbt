@@ -722,7 +722,7 @@
 	quest.346595A5E4D15B1C.title: "Grand panneau en bois"
 	quest.3476803BD17DBC9E.quest_desc: [
 		"Un plot en plastique orange + papier + redstone : 4 cartes."
-		"Fait capter les Antennes réglées sur Évènement ; le canal est la taille de la pile."
+		"Fait capter les Antennes de Party réglées sur Évènement ; le canal est la taille de la pile."
 		"Onglet Programme : 24 emplacements, lus de gauche à droite."
 	]
 	quest.3476803BD17DBC9E.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"

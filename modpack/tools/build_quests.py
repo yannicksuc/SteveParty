@@ -667,7 +667,7 @@ CARDS = [
     ("turns", "blue", ["Every pawn plays once."], ["Chaque pion joue une fois."]),
     ("minigame", "lime", ["One mini-game from the catalogue."], ["Un mini-jeu du catalogue."]),
     ("event", "orange", ["Pings the Party Antennas set to Event; the channel is the stack size."],
-     ["Fait capter les Antennes réglées sur Évènement ; le canal est la taille de la pile."]),
+     ["Fait capter les Antennes de Party réglées sur Évènement ; le canal est la taille de la pile."]),
     ("sequence_start", "pink", ["The next Repeat card starts again from here."],
      ["La carte Répéter suivante reprend d'ici."]),
     ("repeat", "purple", ["Plays the cards since the last Sequence Start again, as many times as cards in its stack."],
