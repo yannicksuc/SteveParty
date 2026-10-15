@@ -29,7 +29,7 @@ import org.joml.Vector3f;
  * <p>
  * Drawn with the entity (LivingEntityRendererParachuteMixin), opaque: cutout canopy, lead ropes, all writing depth. In
  * first person the player's own body is not drawn: his canopy is, after the entities (BEFORE_DEBUG_RENDER), its ropes
- * stopping above his eyes so they don't cross the view.
+ * whole, down to his chest: looking up they meet under him, looking ahead they pass by the screen's edges.
  */
 public final class ParachuteClient {
     /**
@@ -52,8 +52,6 @@ public final class ParachuteClient {
     private static final float SWAY = 5, SWAY_X_SPEED = 0.11f, SWAY_Z_SPEED = 0.083f;
     /** The ropes hang from the canopy's corners, this far in (share of its half-side). */
     private static final float ROPE_CORNER = 0.85f;
-    /** First person: the share of each rope drawn, from the canopy down. */
-    private static final float FIRST_PERSON_ROPE = 0.2f;
 
     private static ParachuteRenderer renderer;
 
@@ -71,7 +69,7 @@ public final class ParachuteClient {
     }
 
     /** Draws {@code entity}'s parachute, if it carries one, from its feet (an entity renderer's origin). */
-    public static void render(LivingEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, boolean firstPerson) {
+    public static void render(LivingEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers) {
         ParachuteState state = Parachutes.get(entity);
         if (state == null || entity.isInvisible()) return;
         float time = entity.getWorld().getTime() + tickDelta;
@@ -97,10 +95,7 @@ public final class ParachuteClient {
         float corner = width * MODEL_HALF_SIDE * ROPE_CORNER;
         for (int x = -1; x <= 1; x += 2) {
             for (int z = -1; z <= 1; z += 2) {
-                Vector3f rim = new Vector3f(x * corner, bottom, z * corner);
-                // in first person: only their top, from the canopy down
-                Vector3f end = firstPerson ? new Vector3f(rim).lerp(center, FIRST_PERSON_ROPE) : center;
-                HitboxHarness.rope(matrices, consumers, end, rim, firstPerson ? canopyLight : centerLight, canopyLight);
+                HitboxHarness.rope(matrices, consumers, center, new Vector3f(x * corner, bottom, z * corner), centerLight, canopyLight);
             }
         }
         matrices.translate(0, bottom, 0);
@@ -129,7 +124,7 @@ public final class ParachuteClient {
             Vec3d at = player.getLerpedPos(tickDelta).subtract(context.camera().getPos());
             matrices.push();
             matrices.translate(at.x, at.y, at.z);
-            render(player, tickDelta, matrices, consumers, true);
+            render(player, tickDelta, matrices, consumers);
             matrices.pop();
             consumers.draw();
         });
