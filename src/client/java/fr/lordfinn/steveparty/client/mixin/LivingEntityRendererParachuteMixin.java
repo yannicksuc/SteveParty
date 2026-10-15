@@ -17,6 +17,6 @@ public abstract class LivingEntityRendererParachuteMixin {
             at = @At("RETURN"))
     private void steveparty$renderParachute(LivingEntity entity, float yaw, float tickDelta, MatrixStack matrices,
                                             VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
-        ParachuteClient.render(entity, tickDelta, matrices, vertexConsumers, false);
+        ParachuteClient.render(entity, tickDelta, matrices, vertexConsumers);
     }
 }
