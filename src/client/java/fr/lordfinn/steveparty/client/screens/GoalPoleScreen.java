@@ -41,7 +41,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     /** Display order of the comparisons, left to right. */
     private static final Comparator[] ORDER = {Comparator.LESS, Comparator.LESS_OR_EQUAL, Comparator.EQUAL,
             Comparator.GREATER_OR_EQUAL, Comparator.GREATER};
-    private static final int CMP_SIZE = 26, CMP_HEIGHT = 22, CMP_GAP = 7;
+    private static final int CMP_SIZE = 28, CMP_HEIGHT = 22, CMP_GAP = 6;
     private static final int HINT_Y = 16, FIELD_HEIGHT = 20, STEP_SIZE = 20;
     private static final ItemStack FLAG_ICON = new ItemStack(ModItems.FLAG);
 
@@ -91,7 +91,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         int cx = x + (WIDTH - rowWidth) / 2;
         for (Comparator c : ORDER) {
             PartyButton button = new PartyButton(cx, y + cmpY, CMP_SIZE, CMP_HEIGHT, symbolName(c), b -> selectComparator(c))
-                    .content((context, textRenderer, centerX, centerY, color) -> drawSymbol(context, textRenderer, c, centerX, centerY, color));
+                    .steady().content((context, textRenderer, centerX, centerY, color) -> drawSymbol(context, textRenderer, c, centerX, centerY, color));
             comparatorButtons.add(addDrawableChild(button));
             cx += CMP_SIZE + CMP_GAP;
         }

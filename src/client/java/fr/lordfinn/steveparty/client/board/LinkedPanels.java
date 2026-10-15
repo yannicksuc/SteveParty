@@ -71,9 +71,10 @@ public final class LinkedPanels {
     public static final int DIVIDER_GAP = 5, DIVIDER = TEXEL;
     /**
      * An icon to its text, a text to the next icon (odd: from an icon's grid to the text's); a text to a « / » (even:
-     * both on the text's grid) and the « / » to the next icon.
+     * both on the text's grid) and the « / » to the next icon (an item leaves about 3 clear pixels in its square: the
+     * « / » then stands as far from both).
      */
-    public static final int ICON_TEXT = 3, ITEM_GAP = 7, TEXT_SLASH = 4, SLASH_ICON = 3;
+    public static final int ICON_TEXT = 3, ITEM_GAP = 7, TEXT_SLASH = 4, SLASH_ICON = 1;
     /** The text's top in the row: its 7 pixels high glyphs ({@link #TEXEL} each) centred in it. */
     private static final int TEXT_Y = (ROW - 7 * TEXEL) / 2;
     /** The clear pixels a sheet icon (a sign, the hourglass) is drawn without, around its cell. */
@@ -383,8 +384,8 @@ public final class LinkedPanels {
 
     // ---------------------------------------------------------------- on the screen
 
-    /** On the card, from the row to the frame's inner edge (the card's plate has a 4 pixel frame): a divider spans it. */
-    private static final int CARD_FACE = FloatingInfo.PAD - 4;
+    /** The card's frame (its plate's 4 pixel border, one card pixel each): the row sits {@link #MARGIN} inside it. */
+    private static final int CARD_BORDER = 4;
 
     /**
      * Its panel out of sight (too far...): its card on the screen ({@link FloatingInfo}, as a board space's), the same
@@ -402,12 +403,13 @@ public final class LinkedPanels {
         int[] layout = layout(font, parts);
         int inset = BORDER + MARGIN;
         // One card pixel per panel pixel: its icons at their full 16 pixels, its text twice the font, as on the panel
-        int width = Math.min(layout[parts.size()] - inset + 2 * FloatingInfo.PAD, FloatingInfo.MAX_WIDTH);
-        int height = ROW + 2 * FloatingInfo.PAD;
+        // The plate's layout with the card's thinner frame: the same margins, the same grid
+        int width = Math.min(plateWidth(layout) - 2 * (BORDER - CARD_BORDER), FloatingInfo.MAX_WIDTH);
+        int height = ROW + 2 * (CARD_BORDER + MARGIN);
         FloatingInfo.card(context, key, width, height, ToolHud.Plate.GOLD, 1f, 0, card -> {
             MatrixStack matrices = card.getMatrices();
             matrices.push();
-            matrices.translate(FloatingInfo.PAD, FloatingInfo.PAD, 0);
+            matrices.translate(CARD_BORDER + MARGIN, CARD_BORDER + MARGIN, 0);
             for (int i = 0; i < parts.size(); i++) drawOnCard(card, font, parts.get(i), layout[i] - inset);
             matrices.pop();
         });
@@ -436,7 +438,7 @@ public final class LinkedPanels {
                 matrices.pop();
             }
             case Glyph glyph -> HudDepth.onTop(card, () -> ComparisonGlyphs.draw(card, glyph.sign(), x, TEXT_Y, glyph.colour(), false, TEXEL));
-            case Divider divider -> HudDepth.onTop(card, () -> card.fill(x + DIVIDER_GAP, -CARD_FACE, x + DIVIDER_GAP + DIVIDER, ROW + CARD_FACE, SOFT));
+            case Divider divider -> HudDepth.onTop(card, () -> card.fill(x + DIVIDER_GAP, -MARGIN, x + DIVIDER_GAP + DIVIDER, ROW + MARGIN, SOFT));
             case Space space -> {
             }
         }

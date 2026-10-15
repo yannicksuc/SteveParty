@@ -59,9 +59,23 @@ public final class ComparisonGlyphs {
         pixels(context, sign, x, y, argb, scale);
     }
 
-    /** {@code sign} centred on (centreX, centreY) (a button's middle), {@code scale} pixels per font pixel, no shadow. */
+    /**
+     * {@code sign}'s drawn pixels centred on (centreX, centreY) (a button's middle), {@code scale} pixels per font pixel,
+     * no shadow: each sign centred on its ink, so that a row of them (« < ≤ = ≥ > ») shares one middle.
+     */
     public static void drawCentred(DrawContext context, Sign sign, int centreX, int centreY, int argb, int scale) {
-        draw(context, sign, centreX - WIDTH * scale / 2, centreY - HEIGHT * scale / 2, argb, false, scale);
+        int minColumn = WIDTH, maxColumn = -1, minRow = HEIGHT, maxRow = -1;
+        for (int row = 0; row < HEIGHT; row++) {
+            for (int column = 0; column < WIDTH; column++) {
+                if (!sign.on(column, row)) continue;
+                minColumn = Math.min(minColumn, column);
+                maxColumn = Math.max(maxColumn, column);
+                minRow = Math.min(minRow, row);
+                maxRow = Math.max(maxRow, row);
+            }
+        }
+        int inkWidth = (maxColumn - minColumn + 1) * scale, inkHeight = (maxRow - minRow + 1) * scale;
+        draw(context, sign, centreX - inkWidth / 2 - minColumn * scale, centreY - inkHeight / 2 - minRow * scale, argb, false, scale);
     }
 
     private static void pixels(DrawContext context, Sign sign, int x, int y, int argb, int scale) {
