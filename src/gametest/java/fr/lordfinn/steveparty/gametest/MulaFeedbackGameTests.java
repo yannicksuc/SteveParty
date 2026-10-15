@@ -233,6 +233,45 @@ public class MulaFeedbackGameTests implements SteveGameTest {
         });
     }
 
+    /**
+     * Only a meal makes the item fly to the Mula: a refused item (not its food, or its food while still chewing) starts
+     * no meal (the synced counter whose change starts the flight) and the "no" timeline flies nothing; the item stays
+     * in the hand.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void onlyAMealMakesTheItemFly(TestContext context) {
+        MulaEntity mula = context.spawnEntity(ModEntities.MULA_ENTITY, new BlockPos(1, 3, 1));
+        mula.setAiDisabled(true);
+        ServerPlayerEntity player = TestPlayers.mock(context, GameMode.SURVIVAL);
+        try {
+            Item food = foodOf(mula);
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(Items.STICK, 2));
+            mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertEquals(mula.refusals(), 1, "a stick is refused");
+            context.assertEquals(mula.getFeedCount(), 0, "refused: no meal, so no flight");
+            context.assertEquals(player.getMainHandStack().getCount(), 2, "refused item stays in the hand");
+            mula.getEffects().instruction("refuse");
+            context.assertTrue(mula.getEffects().itemStack().isEmpty(), "the no flies nothing");
+
+            player.setStackInHand(Hand.MAIN_HAND, new ItemStack(food, 3));
+            mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertEquals(mula.getFeedCount(), 1, "accepted: one meal, the flight's signal");
+            context.assertEquals(player.getMainHandStack().getCount(), 2, "one item taken");
+            mula.getEffects().onFed();
+            context.assertTrue(mula.getEffects().itemStack().isOf(food), "the meal flies to it");
+
+            // its own food again while still chewing: refused like anything else
+            int hunger = mula.getHunger();
+            mula.interactMob(player, Hand.MAIN_HAND);
+            context.assertEquals(mula.getFeedCount(), 1, "chewing: no second meal");
+            context.assertEquals(mula.getHunger(), hunger, "chewing: hunger unchanged");
+            context.assertEquals(player.getMainHandStack().getCount(), 2, "chewing: the food stays in the hand");
+        } finally {
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
     /** Its owner holding out another colour's food: refused and told why, not an order to sit. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void ownerHoldingAnotherColoursFoodIsRefused(TestContext context) {
