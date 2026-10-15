@@ -34,8 +34,7 @@ public final class AntennaIcons {
     public static final Identifier SHEET = Steveparty.id("textures/gui/antenna_icons.png");
     public static final int BADGE_PLUS = 0, BADGE_MINUS = 1, BADGE_CHECK = 3;
     /** The hourglass, and the same off (grey sand): the screen's hold toggle. */
-    public static final int WAIT_OFF = 32, WAIT = 33, FILTER_ANY = 34, FILTER_EQUAL = 35, FILTER_AT_LEAST = 36, FILTER_AT_MOST = 37,
-            MINUS = 38, PLUS = 39, TEST = 40;
+    public static final int WAIT_OFF = 32, WAIT = 33, MINUS = 38, PLUS = 39, TEST = 40;
 
     /**
      * Its item, its badge (-1: none), a size for an item drawn small in its own icon (the die), and whether it is lit
