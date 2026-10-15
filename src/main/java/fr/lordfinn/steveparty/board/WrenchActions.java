@@ -123,6 +123,13 @@ public final class WrenchActions {
         }
     }
 
+    /** Runs {@code action} keeping the undo label said so far (a cartridge swapped along with a link: labelled by the link). */
+    static void keepingLabel(ServerPlayerEntity player, Runnable action) {
+        Text label = LAST_LABELS.get(player.getUuid());
+        action.run();
+        if (label != null) LAST_LABELS.put(player.getUuid(), label);
+    }
+
     /** The action bar message of an action (also its label in the undo history). */
     public static void say(ServerPlayerEntity player, Text text) {
         say(player, text, text);
@@ -233,6 +240,7 @@ public final class WrenchActions {
         ItemStack removed = container.removeStack(slot);
         container.setStack(slot, replacement);
         BoardLinks.sync(container);
+        LinkHistory.record(player, new LinkHistory.CartridgeChange(pos.toImmutable(), slot, removed, replacement, creative));
         BoardLinks.linkNearestChest(player, container, slot);
         if (!creative && !removed.isEmpty()) {
             removed.remove(ModComponents.DESTINATIONS_COMPONENT); // its links stay with the space

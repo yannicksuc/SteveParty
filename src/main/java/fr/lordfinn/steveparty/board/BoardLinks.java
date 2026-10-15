@@ -191,6 +191,8 @@ public final class BoardLinks {
         container.setStack(slot, inserted);
         sync(container);
         BlockPos pos = container.getPos();
+        if (player instanceof ServerPlayerEntity server)
+            LinkHistory.record(server, new LinkHistory.CartridgeChange(pos.toImmutable(), slot, ItemStack.EMPTY, inserted, player.getAbilities().creativeMode));
         player.sendMessage(Text.translatable("message.steveparty.wrench.cartridge_stored",
                 pos.getX(), pos.getY(), pos.getZ()).append(" (").append(inserted.getName()).append(")"), true);
         linkNearestChest(player, container, slot);
