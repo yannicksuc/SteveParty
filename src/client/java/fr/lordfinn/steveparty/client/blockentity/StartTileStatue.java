@@ -7,7 +7,9 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileSize;
 import fr.lordfinn.steveparty.client.pawn.PlayerStatue;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import fr.lordfinn.steveparty.components.ModComponents;
+import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnEntity;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnPose;
+import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.model.ModelPart;
@@ -35,7 +37,8 @@ import java.util.UUID;
 
 /**
  * What a start tile shows on its pedestal (the front of the tile): a small statue of its player in a lively pose (the
- * podiums' poses, one per tile), and in front of it a little wooden rack holding a cream letter plate, like a word game's
+ * podiums' poses but the T-pose, which reads as no pose at all; one per tile), as large as a player pawn and standing
+ * in the middle of the pedestal, and in front of it a little wooden rack holding a cream letter plate, like a word game's
  * tile rack: « Départ 2 · LordFinn », the number of the start tile among those linked to its Party Controller. A start
  * tile without player shows Steve and « Départ libre ».
  * <p>
@@ -43,8 +46,8 @@ import java.util.UUID;
  * entity renderer; the text only within {@link #TEXT_DISTANCE} blocks.
  */
 final class StartTileStatue {
-    /** The statue's size (a player's height times this). */
-    private static final float STATUE_SCALE = 0.3f;
+    /** The statue's size: a player pawn's (its height, its head as wide as its body). */
+    private static final float STATUE_SCALE = PlayerPawnEntity.HEIGHT * 16f / PlayerStatue.HEIGHT_PIXELS;
     /** The plate's text: block per text pixel at most, the widest the plate gets (blocks, on a standard tile). */
     private static final float TEXT_SCALE = 1f / 60f, MAX_WIDTH = 1.6f;
     /** A longer player name is cut (« … »): the plate stays small and its text big enough. */
@@ -56,7 +59,7 @@ final class StartTileStatue {
     /** The plate leans back toward the statue (degrees). */
     private static final float LEAN = 25;
     private static final PlayerPawnPose[] POSES = Arrays.stream(PlayerPawnPose.values()).filter(PlayerPawnPose::podium)
-            .toArray(PlayerPawnPose[]::new);
+            .filter(pose -> pose != PlayerPawnPose.T_POSE).toArray(PlayerPawnPose[]::new);
 
     private StartTileStatue() {
     }
@@ -71,21 +74,21 @@ final class StartTileStatue {
         float size = small ? TileSize.SMALL_SCALE : 1f;
         Vector3f front = front(dir);
         float yaw = -dir * 45f;
-        // The statue on the back half of the pedestal, the plate on its front edge (the pedestal: 12 px, 9 px forward)
-        Vector4f statue = at(onSupport, front, 5f / 16 * size, 3f / 16);
+        // The statue in the middle of the pedestal, the plate on its front edge (the pedestal: 12 px, 9 px forward, 3 px high)
+        Vector4f statue = at(onSupport, front, 9f / 16 * size, 3f / 16);
         Vector4f plate = at(onSupport, front, 14.5f / 16 * size, 3f / 16);
 
         SkinTextures skin = owner != null ? SkinUtils.getSkinTextures(owner) : DefaultSkinHelper.getSkinTextures(new UUID(0, 0));
         Identifier texture = owner != null ? skin.texture() : DefaultSkinHelper.getTexture();
         ModelPart root = owner != null && skin.model() == SkinTextures.Model.SLIM ? slim : wide;
         root.traverse().forEach(ModelPart::resetTransform);
-        PlayerPawnPose pose = POSES[Math.floorMod(Long.hashCode(entity.getPos().asLong()) * 31 + 7, POSES.length)];
+        PlayerPawnPose pose = POSES[Math.floorMod(HashCommon.mix(entity.getPos().hashCode()), POSES.length)];
         PlayerStatue.pose(root, pose);
         matrices.push();
         matrices.translate(statue.x, statue.y, statue.z);
         // Facing the tile's front (the model looks toward -z before the flip)
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180 + yaw));
-        float scale = STATUE_SCALE * size * PlayerStatue.AS_HIGH_AS_A_PLAYER;
+        float scale = STATUE_SCALE * size;
         matrices.scale(-scale, -scale, scale);
         PlayerStatue.transform(matrices, pose);
         matrices.translate(0, -1.501, 0);
