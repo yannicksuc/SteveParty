@@ -3,7 +3,6 @@ package fr.lordfinn.steveparty.blocks.custom.PartyController;
 import fr.lordfinn.steveparty.advancement.PartyAdvancements;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.GoalPoleNetwork;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.PartyJournal;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.journal.JournalPlace;
@@ -912,8 +911,6 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
         markDirty();
         // Each player is told where the party is and how to leave it
         for (ServerPlayerEntity player : getInterestedPlayersEntities()) PartyLeave.tellHowToLeave(player, this);
-        // Goal pole bases linked to this party start again from 0
-        GoalPoleNetwork.onPartyStarted(this);
     }
 
     private void setTokensStatus(ServerWorld serverWorld) {

@@ -80,6 +80,10 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     /** The redstone reminder, under the reset button. */
     private static final int LEGEND_TOP = TOP + ROW + 1;
     private static final ItemStack BASE_ICON = new ItemStack(ModBlocks.GOAL_POLE_BASE);
+    /** The page the « party's players » come from: crossed out while the base is linked to none. */
+    private static final ItemStack PAGE_ICON = new ItemStack(ModItems.MINI_GAME_PAGE);
+    /** Lighter than the usual ghost veil: the crossed-out page must still read as a page. */
+    private static final int UNLINKED_VEIL = 0x668B8B8B;
     /** The legend rows: a weak signal (pause), a full one (pause and reset), the comparators on the base and on the pole. */
     private static final ItemStack[] LEGEND_ITEMS = {new ItemStack(Items.REDSTONE), new ItemStack(Items.REDSTONE_BLOCK),
             new ItemStack(Items.COMPARATOR), new ItemStack(ModBlocks.GOAL_POLE)};
@@ -115,7 +119,6 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private Source source;
     private Players players;
     /** Whether a party controller is near the base (for the party choice's meaning). */
-    private final boolean partyNear;
     /** Whether the base is linked to a mini-game page: « the party » is then the one playing that page's mini-game. */
     private final boolean pageLinked;
     private boolean resetRequested;
@@ -153,7 +156,6 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         NbtCompound settings = handler.getSettings();
         this.source = GoalPoleBaseBlockEntity.readEnum(settings, "Source", Source.values(), Source.LANDINGS_HERE);
         this.players = GoalPoleBaseBlockEntity.readEnum(settings, "Players", Players.values(), Players.ALL);
-        this.partyNear = settings.getBoolean("PartyNear");
         this.pageLinked = settings.getBoolean("PageLinked");
 
         for (NbtElement element : settings.getList("Objectives", NbtElement.COMPOUND_TYPE)) {
@@ -278,7 +280,13 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
                 .content(GoalPoleBaseScreen::drawPresetIcon));
         presetsButton.setTooltip(Tooltip.of(Text.translatable(KEY + "presets").formatted(Formatting.GOLD)
                 .append("\n").append(Text.translatable(KEY + "presets.hint").formatted(Formatting.GRAY))));
-        addDrawableChild(cycle(lx, y + playersY() + 12, COLUMN, "players", Players.values(), () -> players, v -> players = v));
+        addDrawableChild(cycle(lx, y + playersY() + 12, COLUMN, "players", Players.values(), () -> players, v -> {
+            players = v;
+            // Picked while the base is linked to no mini-game: said once in the action bar
+            if (v == Players.PARTY && !pageLinked && client != null && client.player != null) {
+                client.player.sendMessage(Text.translatable(KEY + "players.party.none").formatted(Formatting.GOLD), true);
+            }
+        }));
         selectorField = createField(lx, y + playersFieldY(), COLUMN - 12, KEY + "selector", selectorText);
         selectorField.setPlaceholder(Text.literal("@a").formatted(Formatting.DARK_GRAY));
         radiusField = createField(lx, y + playersFieldY(), COLUMN - 12, KEY + "players.radius", radiusText);
@@ -396,8 +404,7 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         playersCheck = switch (players) {
             case SELECTOR -> selectorCheck;
             case RADIUS -> checkRadius(radiusField.getText());
-            case PARTY -> new Check(true, Text.translatable(KEY + (pageLinked ? "players.party.meaning.page"
-                    : partyNear ? "players.party.meaning" : "players.party.none")));
+            case PARTY -> new Check(true, Text.translatable(KEY + (pageLinked ? "players.party.meaning.page" : "players.party.none")));
             case ALL -> new Check(true, Text.translatable(KEY + "players.all.meaning"));
         };
         goalCheck = criterion ? checkGoal(goalField.getText()) : new Check(true, Text.translatable(KEY + "source.landings_here.meaning"));
@@ -666,6 +673,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         UiText.line(context, textRenderer, Text.translatable(KEY + "players"), MARGIN, playersY(), COLUMN, PartyGui.TEXT_DARK, false);
         if (playersHasField()) {
             drawMeaning(context, playersCheck, MARGIN, playersFieldY() + FIELD_HEIGHT + 3);
+        } else if (players == Players.PARTY) {
+            drawPartyLink(context, MARGIN, playersFieldY() + 2);
         } else {
             // No field under the choice: room for its meaning on four lines, down to the status line
             UiText.wrapped(context, textRenderer, playersCheck.meaning(), MARGIN, playersFieldY() + 3, COLUMN, PartyGui.TEXT_SOFT, false);
@@ -674,10 +683,37 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         // Status line: total and whether the base counts
         NbtCompound settings = handler.getSettings();
         boolean active = settings.getBoolean("Active");
+        // The party's players without a linked page: counting, but nobody's points
+        boolean nobody = active && players == Players.PARTY && !pageLinked;
         MutableText status = Text.translatable(KEY + "status", settings.getLong("Total"))
-                .append("  ").append(Text.translatable(KEY + (active ? "status.active" : "status.paused"))
-                        .formatted(active ? Formatting.DARK_GREEN : Formatting.DARK_RED));
+                .append("  ").append(Text.translatable(KEY + (nobody ? "status.nobody" : active ? "status.active" : "status.paused"))
+                        .formatted(active && !nobody ? Formatting.DARK_GREEN : Formatting.DARK_RED));
         UiText.line(context, textRenderer, status, MARGIN, BUTTONS_Y - 14, WIDTH - 2 * MARGIN, PartyGui.TEXT_DARK, false);
+    }
+
+    /**
+     * The page the party's players come from, framed like the redstone legend's icons, its meaning beside it; linked to
+     * no page, the page is faded and crossed out in red, the text in the error colour.
+     */
+    private void drawPartyLink(DrawContext context, int x, int y) {
+        int iconX = x + 1, iconY = y + 1;
+        context.fill(iconX - 1, iconY - 1, iconX + 13, iconY + 11, 0xFF3A3A3A);
+        var matrices = context.getMatrices();
+        matrices.push();
+        matrices.translate(iconX, iconY - 1, 0);
+        matrices.scale(0.75f, 0.75f, 1f);
+        if (pageLinked) context.drawItem(PAGE_ICON, 0, 0);
+        else PartyGui.ghostItem(context, PAGE_ICON, 0, 0, null, UNLINKED_VEIL);
+        matrices.pop();
+        if (!pageLinked) {
+            // The red cross as a badge on the frame's corner: the page stays recognisable
+            matrices.push();
+            matrices.translate(0, 0, 300);
+            PartyGui.statusIcon(context, iconX + 6, iconY + 4, false);
+            matrices.pop();
+        }
+        UiText.wrapped(context, textRenderer, playersCheck.meaning(), x + 18, y + 1, COLUMN - 18,
+                pageLinked ? PartyGui.TEXT_SOFT : PartyGui.TEXT_ERROR, false);
     }
 
     /** What the field means, under it (on one line of the column; also in the tooltip of the status icon). */

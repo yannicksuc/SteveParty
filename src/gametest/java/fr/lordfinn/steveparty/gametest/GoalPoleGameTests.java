@@ -1264,7 +1264,7 @@ public class GoalPoleGameTests implements SteveGameTest {
             base.setSelector("@a[tag=steveparty_nobody]");
             context.assertTrue(!base.follows(player), "advanced: a selector without this player");
             base.setPlayers(GoalPoleBaseBlockEntity.Players.PARTY, 16);
-            context.assertTrue(base.linkedParty() == null && !base.follows(player), "party players without a party: nobody");
+            context.assertTrue(base.linkedPages().isEmpty() && !base.follows(player), "party players without a linked page: nobody");
             // Settings from the screen
             NbtCompound settings = base.writeSettings();
             settings.putString("Players", "RADIUS");
@@ -1279,44 +1279,33 @@ public class GoalPoleGameTests implements SteveGameTest {
     }
 
     /**
-     * The party link: placed near a party controller, a base follows the party's players; when that party starts,
-     * its points go back to 0 (a base following everyone keeps its points).
+     * « The party's players » come only from a linked mini-game page: a base linked to none follows nobody, even next
+     * to a running party its player is in, and a new base placed there follows everyone.
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "goal_pole_player_party", tickLimit = 40)
-    public void partyLinkFollowsThePartyAndResetsAtItsStart(TestContext context) {
+    public void partyPlayersWithoutALinkedPageIgnoreTheNearestParty(TestContext context) {
         ServerPlayerEntity player = TestPlayers.mock(context);
         BlockPos controllerPos = BASE.east(4);
-        BlockPos otherBase = BASE.west(2);
         try {
             context.setBlockState(controllerPos.down(), Blocks.STONE);
             context.setBlockState(controllerPos, ModBlocks.PARTY_CONTROLLER);
             PartyControllerEntity controller = context.getBlockEntity(controllerPos);
             GoalPoleBaseBlockEntity base = placeBase(context, base());
             base.onPlacedByPlayer();
-            context.assertTrue(base.getPlayers() == GoalPoleBaseBlockEntity.Players.PARTY && base.linkedParty() == controller,
-                    "placed near a party controller: the party's players");
-            context.setBlockState(otherBase, base());
-            GoalPoleNetwork.processPending();
-            GoalPoleBaseBlockEntity everyone = (GoalPoleBaseBlockEntity) context.getWorld().getBlockEntity(context.getAbsolutePos(otherBase));
-            context.assertTrue(everyone.getPlayers() == GoalPoleBaseBlockEntity.Players.ALL, "set by a command: everyone");
+            context.assertTrue(base.getPlayers() == GoalPoleBaseBlockEntity.Players.ALL,
+                    "placed near a party controller but linked to no page: everyone");
 
-            context.assertTrue(!base.follows(player), "no party running: nobody");
+            base.setPlayers(GoalPoleBaseBlockEntity.Players.PARTY, 16);
             PartyData data = new PartyData();
             data.addStep(new PartyStep());
             data.addStep(new EndPartyStep(new ArrayList<>()));
             controller.setPartyData(data);
             controller.nextStep();
-            context.assertTrue(data.isStarted(), "party running");
-            context.assertTrue(!base.follows(player), "not in the party");
             controller.addInterestedPlayer(player);
-            context.assertTrue(base.follows(player), "in the party");
-
-            base.credit("Alex", 3, null);
-            everyone.credit("Alex", 3, null);
-            GoalPoleNetwork.onPartyStarted(controller);
-            context.assertTrue(base.getTotal() == 0, "linked base: back to 0 when the party starts");
-            context.assertTrue(everyone.getTotal() == 3, "base following everyone: points kept");
-            context.setBlockState(otherBase, Blocks.AIR);
+            context.assertTrue(data.isStarted() && controller.isParticipant(player), "a running party next to the base, the player in it");
+            context.assertTrue(base.countedParty() == null && base.countedSession() == null, "not linked: no party counted");
+            context.assertTrue(!base.follows(player), "not linked: nobody counts");
+            context.assertTrue(!base.writeSettings().getBoolean("PageLinked"), "its screen is told");
             removeBase(context);
             context.complete();
         } finally {

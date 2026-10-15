@@ -92,10 +92,9 @@ import static fr.lordfinn.steveparty.criteria.ModScoreboardCriteria.LANDED_ON_PO
  * place, and resetting the base empties the group (as resetting the group resets the base).
  * <p>
  * <b>Players</b> ({@link Players}): every player, the players near the base, the players of the party, or an advanced
- * target selector. « The party » is, for a base linked to a mini-game page (clicked with it, or touching a podium
- * linked to it), the party playing that page's mini-game right now, wherever it is: its players are those of the
- * mini-game. Without a linked page it is the nearest party controller within {@value #PARTY_LINK_RADIUS} blocks (the
- * points also go back to 0 when that party starts).
+ * target selector. « The party » comes only from the mini-game pages the base is linked to (clicked with one, or
+ * touching a podium linked to one): the players of the mini-game being played on them right now, wherever it is (the
+ * points go back to 0 when it starts). Not linked to a page, nobody counts.
  */
 public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements ExtendedScreenHandlerFactory<GoalPoleBasePayload> {
     /**
@@ -106,11 +105,11 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
 
     public enum Players {
         /**
-         * The players of the party: the one playing the mini-game of the page the base is linked to, however far; without
-         * a linked page, the one run by the nearest party controller (the points go back to 0 when it starts).
+         * The players of the mini-game played on a page the base is linked to, however far; not linked, nobody (the
+         * points go back to 0 when that mini-game starts).
          */
         PARTY,
-        /** Every player. Default of new bases without a party controller nearby. */
+        /** Every player. Default of new bases not linked to a mini-game page. */
         ALL,
         /** The players within {@link #radius} blocks of the base when they score. */
         RADIUS,
@@ -118,8 +117,6 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         SELECTOR
     }
 
-    /** How far a party controller can be from its linked bases (the party's audience). */
-    public static final int PARTY_LINK_RADIUS = PartyControllerEntity.PARTY_AUDIENCE_RADIUS;
     public static final int MAX_RADIUS = 256;
 
     /** Redstone power into the base that also puts the points back to 0 (below it, the signal only pauses). */
@@ -459,8 +456,9 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         }
         if (source != Source.LANDINGS_HERE) return;
         if (!follows(player)) {
-            // Not one of the players this base follows: say so (no party running, too far, not in the party...)
-            String why = players == Players.PARTY && countedSession() == null && countedParty() == null ? "no_party" : "not_followed";
+            // Not one of the players this base follows: say so (no linked mini-game played, too far, not playing...)
+            String why = players != Players.PARTY ? "not_followed"
+                    : linkedPages().isEmpty() ? "no_page" : countedSession() == null ? "no_party" : "not_followed";
             player.sendMessage(Text.translatable("message.steveparty.goal_pole." + why).formatted(Formatting.GOLD), true);
             return;
         }
@@ -768,33 +766,12 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
             case RADIUS -> player.getWorld() == world
                     && player.squaredDistanceTo(Vec3d.ofCenter(pos)) <= (double) radius * radius;
             case PARTY -> {
-                // Linked to a page: the players of its mini-game (a party's or a test's; not those who only watch)
-                if (!linkedPages().isEmpty()) {
-                    MiniGameSession session = countedSession();
-                    yield session != null && session.isParticipant(player.getUuid());
-                }
-                PartyControllerEntity party = runningParty();
-                yield party != null && party.isParticipant(player);
+                // The players of the linked page's mini-game (a party's or a test's; not those who only watch)
+                MiniGameSession session = countedSession();
+                yield session != null && session.isParticipant(player.getUuid());
             }
             case SELECTOR -> followsSelector(player);
         };
-    }
-
-    /** The party this base is linked to: the nearest party controller (running or not) within the link radius. */
-    @Nullable
-    public PartyControllerEntity linkedParty() {
-        if (world == null || world.isClient) return null;
-        PartyControllerEntity best = null;
-        double bestDistance = (double) PARTY_LINK_RADIUS * PARTY_LINK_RADIUS;
-        for (PartyControllerEntity controller : PartyControllerEntity.getActivePartyControllers()) {
-            if (controller.isRemoved() || controller.getWorld() != world) continue;
-            double distance = controller.getPos().getSquaredDistance(pos);
-            if (distance < bestDistance) {
-                best = controller;
-                bestDistance = distance;
-            }
-        }
-        return best;
     }
 
     /**
@@ -816,34 +793,20 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
     }
 
     /**
-     * The party whose players « the party's players » are, now: linked to a page, the party playing that page's
-     * mini-game, at any distance and in any dimension (none playing it: nobody counts); not linked, the nearest party
-     * controller's, if it runs.
+     * The party playing the mini-game of a page this base is linked to, at any distance and in any dimension; null when
+     * none plays it or the base is linked to no page.
      */
     @Nullable
     public PartyControllerEntity countedParty() {
         Set<UUID> pages = linkedPages();
-        if (!pages.isEmpty()) return PartyControllerEntity.getPartyPlayingPage(pages).orElse(null);
-        return runningParty();
+        return pages.isEmpty() ? null : PartyControllerEntity.getPartyPlayingPage(pages).orElse(null);
     }
 
-    /** The linked party, if it is running. */
-    @Nullable
-    private PartyControllerEntity runningParty() {
-        PartyControllerEntity party = linkedParty();
-        return party != null && party.getPartyData().isStarted() ? party : null;
-    }
-
-    /** A party started: if it is this base's party, its points go back to 0. */
-    void onPartyStarted(PartyControllerEntity controller) {
-        if (players == Players.PARTY && linkedParty() == controller) reset();
-    }
-
-    /** Placed by a player: the party's players when a party controller is near, else every player. */
+    /** Placed by a player: the mini-game's players when linked to a page (through a podium it touches), else everyone. */
     public void onPlacedByPlayer() {
         if (!fresh) return;
         fresh = false;
-        players = linkedParty() != null ? Players.PARTY : Players.ALL;
+        players = linkedPages().isEmpty() ? Players.ALL : Players.PARTY;
         markDirty();
     }
 
@@ -925,7 +888,6 @@ public class GoalPoleBaseBlockEntity extends SyncedBlockEntity implements Extend
         settings.putString("Players", players.name());
         settings.putInt("Radius", radius);
         settings.putLong("Total", total);
-        settings.putBoolean("PartyNear", linkedParty() != null);
         settings.putBoolean("PageLinked", !linkedPages().isEmpty());
         settings.putBoolean("Active", isActive());
         if (world != null && world.getServer() != null) settings.put("Objectives", listObjectives(world.getServer()));
