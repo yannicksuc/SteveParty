@@ -2954,6 +2954,7 @@
   "pose.steveparty.player_pawn.lounge": "Détente",
   "pose.steveparty.player_pawn.knees_hugged": "Genoux serrés",
   "pose.steveparty.player_pawn.handstand": "Poirier",
+  "pose.steveparty.player_pawn.sit_spread": "Jambes écartées",
   "command.steveparty.playerpawn.done": "%s joueurs changés en pion",
   "command.steveparty.playerpawn.done.one": "1 joueur changé en pion",
   "command.steveparty.playerpawn.none": "Aucun joueur ne peut devenir un pion maintenant (déjà pion, ou sous le sort)",

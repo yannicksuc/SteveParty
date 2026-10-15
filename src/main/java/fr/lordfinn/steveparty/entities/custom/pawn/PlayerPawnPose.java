@@ -39,7 +39,11 @@ public enum PlayerPawnPose {
     LOUNGE("lounge", -15, 0, 0, 35, 0, 15, 35, 0, -15, -120, 6, -115, -6, -10.5F, 0, 25, false),
     KNEES_HUGGED("knees_hugged", 20, 0, 0, -75, -20, 0, -75, 20, 0, -135, 2, -135, -2, -10.5F, 0, 0, false),
     // Upside down on its hands, looking at the floor: the head bent back, clear of the base
-    HANDSTAND("handstand", -90, 0, 0, 0, 0, 172, 0, 0, -172, 0, 10, 0, -10, 0, 0, 0, true);
+    HANDSTAND("handstand", -90, 0, 0, 0, 0, 172, 0, 0, -172, 0, 10, 0, -10, 0, 0, 0, true),
+    // The start tile's statue (posed by LordFinn in Blockbench): sitting, the legs spread out in front, the chest
+    // turned a little, looking up
+    SIT_SPREAD("sit_spread", -17.4F, 2.2F, 7.2F, -52.5F, 0, 10, -52.5F, 0, -10, -76.8F, 59.9F, 11.8F, -60.2F, -56.4F, -29.5F,
+            2.4F, -19.8F, 1.3F, -9.5F, 5, 0);
 
     private static final PlayerPawnPose[] VALUES = values();
 
@@ -47,8 +51,9 @@ public enum PlayerPawnPose {
     public final float headPitch, headYaw, headRoll;
     public final float rightArmPitch, rightArmYaw, rightArmRoll;
     public final float leftArmPitch, leftArmYaw, leftArmRoll;
-    public final float rightLegPitch, rightLegRoll;
-    public final float leftLegPitch, leftLegRoll;
+    public final float rightLegPitch, rightLegYaw, rightLegRoll;
+    public final float leftLegPitch, leftLegYaw, leftLegRoll;
+    public final float bodyPitch, bodyYaw, bodyRoll;
     /** The whole figure moved up (negative: down, e.g. sitting) and forward, in model pixels. */
     public final float lift, forward;
     /** The whole figure leaning back (positive) or forward, around its hips, in degrees. */
@@ -69,7 +74,35 @@ public enum PlayerPawnPose {
                    float leftArmPitch, float leftArmYaw, float leftArmRoll,
                    float rightLegPitch, float rightLegRoll, float leftLegPitch, float leftLegRoll,
                    float lift, float forward, float tilt, boolean upsideDown) {
+        this(id, headPitch, headYaw, headRoll, rightArmPitch, rightArmYaw, rightArmRoll, leftArmPitch, leftArmYaw, leftArmRoll,
+                rightLegPitch, 0, rightLegRoll, leftLegPitch, 0, leftLegRoll, 0, 0, 0, lift, forward, tilt, upsideDown);
+    }
+
+    /** With the legs' yaw and the body's angles (a statue posed in Blockbench). */
+    PlayerPawnPose(String id, float headPitch, float headYaw, float headRoll,
+                   float rightArmPitch, float rightArmYaw, float rightArmRoll,
+                   float leftArmPitch, float leftArmYaw, float leftArmRoll,
+                   float rightLegPitch, float rightLegYaw, float rightLegRoll,
+                   float leftLegPitch, float leftLegYaw, float leftLegRoll,
+                   float bodyPitch, float bodyYaw, float bodyRoll, float lift, float forward, float tilt) {
+        this(id, headPitch, headYaw, headRoll, rightArmPitch, rightArmYaw, rightArmRoll, leftArmPitch, leftArmYaw, leftArmRoll,
+                rightLegPitch, rightLegYaw, rightLegRoll, leftLegPitch, leftLegYaw, leftLegRoll, bodyPitch, bodyYaw, bodyRoll,
+                lift, forward, tilt, false);
+    }
+
+    private PlayerPawnPose(String id, float headPitch, float headYaw, float headRoll,
+                           float rightArmPitch, float rightArmYaw, float rightArmRoll,
+                           float leftArmPitch, float leftArmYaw, float leftArmRoll,
+                           float rightLegPitch, float rightLegYaw, float rightLegRoll,
+                           float leftLegPitch, float leftLegYaw, float leftLegRoll,
+                           float bodyPitch, float bodyYaw, float bodyRoll,
+                           float lift, float forward, float tilt, boolean upsideDown) {
         this.id = id;
+        this.rightLegYaw = rightLegYaw;
+        this.leftLegYaw = leftLegYaw;
+        this.bodyPitch = bodyPitch;
+        this.bodyYaw = bodyYaw;
+        this.bodyRoll = bodyRoll;
         this.lift = lift;
         this.forward = forward;
         this.tilt = tilt;

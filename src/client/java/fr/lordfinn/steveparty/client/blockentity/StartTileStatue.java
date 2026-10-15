@@ -8,7 +8,6 @@ import fr.lordfinn.steveparty.client.pawn.PlayerStatue;
 import fr.lordfinn.steveparty.client.utils.SkinUtils;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.custom.pawn.PlayerPawnPose;
-import it.unimi.dsi.fastutil.HashCommon;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.model.ModelPart;
@@ -34,8 +33,8 @@ import org.joml.Vector4f;
 import java.util.UUID;
 
 /**
- * What a start tile shows on its pedestal (the front of the tile): a small statue of its player sitting on it (one of
- * the seated poses, one per tile), clear of the pawn standing in the middle of the tile and behind the plate, and in
+ * What a start tile shows on its pedestal (the front of the tile): a statue of its player sitting on it, its legs spread
+ * out in front, clear of the pawn standing in the middle of the tile and behind the plate, and in
  * front of it a little wooden rack holding a cream letter plate, like a word game's tile rack: « Départ 2 · LordFinn »,
  * the number of the start tile among those linked to its Party Controller. A start tile without player shows Steve and
  * « Départ libre ».
@@ -62,8 +61,8 @@ final class StartTileStatue {
     private static final int WOOD = 0xFF9A6A3C, WOOD_DARK = 0xFF6B4426, WOOD_SHADOW = 0xFF3A2414, CREAM = 0xFFF1E2C0, CREAM_EDGE = 0xFFCDB68B, INK = 0xFF3B2A1A;
     /** The plate leans back toward the statue (degrees). */
     private static final float LEAN = 25;
-    private static final PlayerPawnPose[] POSES = {PlayerPawnPose.SIT_EDGE, PlayerPawnPose.CROSS_LEGGED,
-            PlayerPawnPose.LOUNGE, PlayerPawnPose.KNEES_HUGGED};
+    /** Posed by LordFinn in Blockbench (Workshop art/bbmodels/statue_depart). */
+    private static final PlayerPawnPose POSE = PlayerPawnPose.SIT_SPREAD;
 
     private StartTileStatue() {
     }
@@ -87,7 +86,7 @@ final class StartTileStatue {
         Identifier texture = owner != null ? skin.texture() : DefaultSkinHelper.getTexture();
         ModelPart root = owner != null && skin.model() == SkinTextures.Model.SLIM ? slim : wide;
         root.traverse().forEach(ModelPart::resetTransform);
-        PlayerPawnPose pose = POSES[Math.floorMod(HashCommon.mix(entity.getPos().hashCode()), POSES.length)];
+        PlayerPawnPose pose = POSE;
         PlayerStatue.pose(root, pose);
         matrices.push();
         matrices.translate(statue.x, statue.y, statue.z);
