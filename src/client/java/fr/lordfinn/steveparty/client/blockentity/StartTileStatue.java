@@ -49,8 +49,8 @@ final class StartTileStatue {
      */
     private static final float STATUE_HEIGHT = 1.1f;
     private static final float STATUE_SCALE = STATUE_HEIGHT * 16f / PlayerStatue.HEIGHT_PIXELS;
-    /** Where the statue sits, toward the front from the tile's middle (blocks): the pedestal's middle. */
-    private static final float STATUE_FORWARD = 9f / 16;
+    /** Where the statue sits, toward the front from the tile's middle (blocks): the back of the pedestal, its legs clear of the plate. */
+    private static final float STATUE_FORWARD = 6f / 16;
     /** The plate's text: block per text pixel at most, the widest the plate gets (blocks, on a standard tile). */
     private static final float TEXT_SCALE = 1f / 60f, MAX_WIDTH = 1.6f;
     /** A longer player name is cut (« … »): the plate stays small and its text big enough. */

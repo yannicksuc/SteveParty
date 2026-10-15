@@ -13,7 +13,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileContents;
 import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.DestinationSwap;
 import fr.lordfinn.steveparty.board.Pipette;
-import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.payloads.custom.ToolWheelPayload;
@@ -263,15 +262,14 @@ public class TileCartridgeGameTests implements SteveGameTest {
             BoardLinkingGameTests.paint(player, brush, context, t.get(0), t.get(1), t.get(2));
             context.assertEquals(BoardLinkingGameTests.links(context, t.get(0)), List.of(t.get(1)), "linked without any cartridge in the inventory");
             context.assertEquals(BoardLinkingGameTests.links(context, t.get(1)), List.of(t.get(2)), "and the next one");
-            // A kind picked: the tiles painted get it, links kept, theirs back
+            // A kind picked: the tile a new path is painted from gets it, links kept, its own back
             player.getInventory().setStack(9, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP, 1));
             context.assertTrue(BoardLinkingGameTests.pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
                     Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR_STOP)), "stop picked");
-            TileLinkerBrush.paint(player, brush, context.getWorld(), t.get(0));
-            TileLinkerBrush.endStroke(player);
+            BoardLinkingGameTests.paint(player, brush, context, t.get(0), t.get(2));
             BoardSpaceBlockEntity first = BoardLinkingGameTests.boardSpace(context, t.get(0));
             context.assertTrue(first.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "the stop cartridge went in");
-            context.assertEquals(BoardLinks.links(first, 0), List.of(t.get(1)), "with the tile's links");
+            context.assertEquals(BoardLinks.links(first, 0), List.of(t.get(1), t.get(2)), "with the tile's links and the new one");
             context.assertTrue(player.getInventory().getStack(9).isEmpty(), "taken from the inventory");
             context.assertTrue(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR) == 1, "the plain one back");
         });

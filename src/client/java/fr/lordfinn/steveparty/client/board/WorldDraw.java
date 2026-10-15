@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.board;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.board.CartridgeLinks;
 import fr.lordfinn.steveparty.board.PartyLinks;
+import fr.lordfinn.steveparty.board.RouterLinks;
 import fr.lordfinn.steveparty.client.renderer.GlowingCuboidRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -166,6 +167,15 @@ public final class WorldDraw {
     static void stepLink(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d stepController, Vec3d element,
                          float alpha, double seconds) {
         dotted(matrices, consumers, camera, stepController, element, alpha, seconds * BUBBLE_DRIFT, PartyLinks::gradient);
+    }
+
+    /**
+     * The link from an Aiguilleur (router) to a board space it powers: dotted like a Step Controller's (it controls,
+     * nobody walks it), in redstone red ({@link RouterLinks#gradient}), the dots drifting toward the space.
+     */
+    static void routerLink(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera, Vec3d router, Vec3d space,
+                           float alpha, double seconds) {
+        dotted(matrices, consumers, camera, router, space, alpha, seconds * BUBBLE_DRIFT, RouterLinks::gradient);
     }
 
     // ---------------------------------------------------------------- teleport arcs

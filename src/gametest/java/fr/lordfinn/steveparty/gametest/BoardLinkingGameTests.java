@@ -797,6 +797,79 @@ public class BoardLinkingGameTests implements SteveGameTest {
         });
     }
 
+    /**
+     * A kind of Cartridge picked on the wheel replaces only the cartridge of the space a new path is painted from, once
+     * the path is painted: the space it reaches is untouched (an empty one stays empty), a space only touched or a
+     * stroke going nowhere changes nothing. Taken from the inventory, the replaced one given back; undone with its link.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aPickedCartridgeOnlyReplacesThePathStart(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1), new BlockPos(5, 1, 1));
+        BoardSpaceBlockEntity a = boardSpace(context, t.get(0)), b = boardSpace(context, t.get(1)), c = boardSpace(context, t.get(2));
+        a.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
+        b.setStack(0, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR));
+        BlockPos nowhere = context.getAbsolutePos(new BlockPos(7, 1, 1));
+        withPlayer(context, false, player -> {
+            player.getInventory().clear();
+            ItemStack brush = brush(player);
+            player.getInventory().setStack(10, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR_STOP, 3));
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
+                    Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR_STOP)), "the stop cartridge picked");
+            // Only touched, or a stroke reaching nothing: nothing changes
+            paint(player, brush, context, t.get(0));
+            paint(player, brush, context, t.get(0), nowhere);
+            context.assertTrue(a.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "a space only touched keeps its cartridge");
+            context.assertEquals(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR_STOP), 3, "no stop cartridge spent");
+            context.assertEquals(LinkHistory.size(player.getUuid(), true), 0, "nothing to undo");
+            // A → B: only A's cartridge replaced
+            paint(player, brush, context, t.get(0), t.get(1));
+            context.assertTrue(a.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "the start of the path replaced");
+            context.assertEquals(BoardLinks.links(a, 0), List.of(t.get(1)), "with its new link");
+            context.assertTrue(b.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "the space it reaches untouched");
+            context.assertEquals(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR_STOP), 2, "one stop cartridge taken");
+            context.assertEquals(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR), 1, "the plain one given back");
+            // A → C, C empty: it stays empty
+            paint(player, brush, context, t.get(0), t.get(2));
+            context.assertTrue(c.getStack(0).isEmpty(), "an empty space reached stays empty");
+            context.assertEquals(BoardLinks.links(a, 0), List.of(t.get(1), t.get(2)), "both links");
+            context.assertEquals(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR_STOP), 2, "none spent on the empty space");
+            // Undo: the link to C, then A → B with A's cartridge, in one step
+            context.assertTrue(LinkHistory.undo(player, true, brush), "A → C undone");
+            context.assertEquals(BoardLinks.links(a, 0), List.of(t.get(1)), "the link to C gone");
+            context.assertTrue(LinkHistory.undo(player, true, brush), "A → B undone");
+            context.assertTrue(a.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR), "A's cartridge back");
+            context.assertEquals(BoardLinks.links(a, 0), List.of(), "with no link");
+            context.assertEquals(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR_STOP), 3, "the stop cartridge back in the inventory");
+            context.assertEquals(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR), 0, "the plain one back in the space");
+            // Redo: both again, the items exchanged again
+            context.assertTrue(LinkHistory.undo(player, false, brush), "A → B redone");
+            context.assertTrue(a.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "replaced again");
+            context.assertEquals(BoardLinks.links(a, 0), List.of(t.get(1)), "linked again");
+            context.assertEquals(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR_STOP)
+                    + player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR), 3, "never an item created nor lost");
+        });
+    }
+
+    /** An empty space a path is painted from gets the picked kind, once linked only; undone, it is empty again. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aPickedCartridgeGoesInAnEmptyPathStartOnceLinked(TestContext context) {
+        List<BlockPos> t = tiles(context, ModBlocks.TILE, new BlockPos(1, 1, 1), new BlockPos(3, 1, 1));
+        BoardSpaceBlockEntity a = boardSpace(context, t.get(0)), b = boardSpace(context, t.get(1));
+        b.setStack(0, new ItemStack(ModItems.TRICHAUDRON_CARTRIDGE));
+        withPlayer(context, true, player -> {
+            ItemStack brush = brush(player);
+            context.assertTrue(pick(player, ToolWheelPayload.Action.BRUSH_CARTRIDGE,
+                    Registries.ITEM.getRawId(ModItems.BOARD_SPACE_BEHAVIOR_STOP)), "the stop cartridge picked");
+            paint(player, brush, context, t.get(0));
+            context.assertTrue(a.getStack(0).isEmpty(), "only touched: still empty");
+            paint(player, brush, context, t.get(0), t.get(1));
+            context.assertTrue(a.getStack(0).isOf(ModItems.BOARD_SPACE_BEHAVIOR_STOP), "linked: the picked kind went in");
+            context.assertTrue(b.getStack(0).isOf(ModItems.TRICHAUDRON_CARTRIDGE), "the space it reaches keeps its role");
+            context.assertTrue(LinkHistory.undo(player, true, brush), "undone");
+            context.assertTrue(a.getStack(0).isEmpty(), "empty again");
+        });
+    }
+
     /** The anchor of the brush picks the shop of a shop space, as the Wrench's origin did (see ShopStopGameTests). */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theWrenchNoLongerKeepsAnOrigin(TestContext context) {
