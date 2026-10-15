@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.screens;
 
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.GoalPoleBlockEntity.Comparator;
+import fr.lordfinn.steveparty.client.gui.ComparisonGlyphs;
 import fr.lordfinn.steveparty.client.gui.HitArea;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
@@ -40,7 +41,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
     /** Display order of the comparisons, left to right. */
     private static final Comparator[] ORDER = {Comparator.LESS, Comparator.LESS_OR_EQUAL, Comparator.EQUAL,
             Comparator.GREATER_OR_EQUAL, Comparator.GREATER};
-    private static final int CMP_SIZE = 26, CMP_HEIGHT = 22, CMP_GAP = 7;
+    private static final int CMP_SIZE = 28, CMP_HEIGHT = 22, CMP_GAP = 6;
     private static final int HINT_Y = 16, FIELD_HEIGHT = 20, STEP_SIZE = 20;
     private static final ItemStack FLAG_ICON = new ItemStack(ModItems.FLAG);
 
@@ -90,7 +91,7 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         int cx = x + (WIDTH - rowWidth) / 2;
         for (Comparator c : ORDER) {
             PartyButton button = new PartyButton(cx, y + cmpY, CMP_SIZE, CMP_HEIGHT, symbolName(c), b -> selectComparator(c))
-                    .content((context, textRenderer, centerX, centerY, color) -> drawSymbol(context, textRenderer, c, centerX, centerY, color));
+                    .steady().content((context, textRenderer, centerX, centerY, color) -> drawSymbol(context, textRenderer, c, centerX, centerY, color));
             comparatorButtons.add(addDrawableChild(button));
             cx += CMP_SIZE + CMP_GAP;
         }
@@ -268,27 +269,15 @@ public class GoalPoleScreen extends HandledScreen<GoalPoleScreenHandler> {
         return Text.translatable(KEY + "comparator." + key(c), "");
     }
 
-    /**
-     * Comparison symbols at twice the font size: {@code <}, {@code =}, {@code >} are font glyphs, {@code ≤} and
-     * {@code ≥} the same glyphs raised a little with a bar underneath (the pixel font has no ≤ ≥).
-     */
+    /** Comparison symbols at twice the font size, from the shared pixel set ({@link ComparisonGlyphs}). */
     private static void drawSymbol(DrawContext context, TextRenderer textRenderer, Comparator c, int centerX, int centerY, int color) {
-        String glyph = switch (c) {
-            case LESS, LESS_OR_EQUAL -> "<";
-            case GREATER, GREATER_OR_EQUAL -> ">";
-            case EQUAL -> "=";
-        };
-        boolean orEqual = c == Comparator.LESS_OR_EQUAL || c == Comparator.GREATER_OR_EQUAL;
-        int glyphWidth = textRenderer.getWidth(glyph) - 1; // without the spacing column
-        var matrices = context.getMatrices();
-        matrices.push();
-        matrices.translate(centerX - glyphWidth, centerY - 7 - (orEqual ? 2 : 0), 0);
-        matrices.scale(2f, 2f, 1f);
-        UiText.line(context, textRenderer, glyph, 0, 0, textRenderer.getWidth(glyph), color, false);
-        matrices.pop();
-        if (orEqual) {
-            context.fill(centerX - glyphWidth, centerY + 6, centerX + glyphWidth, centerY + 8, color);
-        }
+        ComparisonGlyphs.drawCentred(context, switch (c) {
+            case LESS -> ComparisonGlyphs.Sign.LESS;
+            case LESS_OR_EQUAL -> ComparisonGlyphs.Sign.LESS_OR_EQUAL;
+            case EQUAL -> ComparisonGlyphs.Sign.EQUAL;
+            case GREATER_OR_EQUAL -> ComparisonGlyphs.Sign.GREATER_OR_EQUAL;
+            case GREATER -> ComparisonGlyphs.Sign.GREATER;
+        }, centerX, centerY, color, 2);
     }
 
     private static void drawMinus(DrawContext context, TextRenderer textRenderer, int centerX, int centerY, int color) {
