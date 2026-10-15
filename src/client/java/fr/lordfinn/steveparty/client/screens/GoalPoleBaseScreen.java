@@ -82,6 +82,8 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
     private static final ItemStack BASE_ICON = new ItemStack(ModBlocks.GOAL_POLE_BASE);
     /** The page the « party's players » come from: crossed out while the base is linked to none. */
     private static final ItemStack PAGE_ICON = new ItemStack(ModItems.MINI_GAME_PAGE);
+    /** Lighter than the usual ghost veil: the crossed-out page must still read as a page. */
+    private static final int UNLINKED_VEIL = 0x668B8B8B;
     /** The legend rows: a weak signal (pause), a full one (pause and reset), the comparators on the base and on the pole. */
     private static final ItemStack[] LEGEND_ITEMS = {new ItemStack(Items.REDSTONE), new ItemStack(Items.REDSTONE_BLOCK),
             new ItemStack(Items.COMPARATOR), new ItemStack(ModBlocks.GOAL_POLE)};
@@ -681,9 +683,11 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         // Status line: total and whether the base counts
         NbtCompound settings = handler.getSettings();
         boolean active = settings.getBoolean("Active");
+        // The party's players without a linked page: counting, but nobody's points
+        boolean nobody = active && players == Players.PARTY && !pageLinked;
         MutableText status = Text.translatable(KEY + "status", settings.getLong("Total"))
-                .append("  ").append(Text.translatable(KEY + (active ? "status.active" : "status.paused"))
-                        .formatted(active ? Formatting.DARK_GREEN : Formatting.DARK_RED));
+                .append("  ").append(Text.translatable(KEY + (nobody ? "status.nobody" : active ? "status.active" : "status.paused"))
+                        .formatted(active && !nobody ? Formatting.DARK_GREEN : Formatting.DARK_RED));
         UiText.line(context, textRenderer, status, MARGIN, BUTTONS_Y - 14, WIDTH - 2 * MARGIN, PartyGui.TEXT_DARK, false);
     }
 
@@ -699,15 +703,16 @@ public class GoalPoleBaseScreen extends HandledScreen<GoalPoleBaseScreenHandler>
         matrices.translate(iconX, iconY - 1, 0);
         matrices.scale(0.75f, 0.75f, 1f);
         if (pageLinked) context.drawItem(PAGE_ICON, 0, 0);
-        else PartyGui.ghostItem(context, PAGE_ICON, 0, 0, null);
+        else PartyGui.ghostItem(context, PAGE_ICON, 0, 0, null, UNLINKED_VEIL);
         matrices.pop();
         if (!pageLinked) {
+            // The red cross as a badge on the frame's corner: the page stays recognisable
             matrices.push();
             matrices.translate(0, 0, 300);
-            PartyGui.statusIcon(context, iconX + 3, iconY + 2, false);
+            PartyGui.statusIcon(context, iconX + 6, iconY + 4, false);
             matrices.pop();
         }
-        UiText.wrapped(context, textRenderer, playersCheck.meaning(), x + 16, y + 1, COLUMN - 16,
+        UiText.wrapped(context, textRenderer, playersCheck.meaning(), x + 18, y + 1, COLUMN - 18,
                 pageLinked ? PartyGui.TEXT_SOFT : PartyGui.TEXT_ERROR, false);
     }
 
