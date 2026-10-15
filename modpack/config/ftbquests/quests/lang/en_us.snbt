@@ -129,8 +129,8 @@
 	]
 	quest.02E3D80EBC49D590.title: "Soft landing"
 	quest.030135F1CA2F65E1.quest_desc: [
-		"Right-click: pick a moment (party start, turn start, die rolled, mini-game end...). It pulses then, and a comparator reads a value (die result, rank...)."
-		"Wait mode (Wrench): the party freezes until the antenna gets a signal."
+		"Right-click it with the Wrench: every moment it can listen to, by family (party, turns, coins and stars, events, mini-games). It pulses then, and a comparator reads a value (die result, rank...)."
+		"Wait mode: the party freezes until the antenna gets a signal."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.030135F1CA2F65E1.title: "Party Antenna"
