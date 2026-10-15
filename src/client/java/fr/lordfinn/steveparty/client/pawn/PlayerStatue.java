@@ -33,6 +33,9 @@ public final class PlayerStatue {
         ModelPart rightArm = root.getChild("right_arm"), leftArm = root.getChild("left_arm");
         ModelPart rightLeg = root.getChild("right_leg"), leftLeg = root.getChild("left_leg");
         body.setAngles(0, 0, 0);
+        // The layer's cape and ears are a player renderer's extras: a statue has none
+        root.getChild("cloak").visible = false;
+        root.getChild("ear").visible = false;
         head.setAngles(rad(pose.headPitch), rad(pose.headYaw), rad(pose.headRoll));
         rightArm.setAngles(rad(pose.rightArmPitch), rad(pose.rightArmYaw), rad(pose.rightArmRoll));
         leftArm.setAngles(rad(pose.leftArmPitch), rad(pose.leftArmYaw), rad(pose.leftArmRoll));
