@@ -57,15 +57,12 @@ public final class BoardLinks {
     }
 
     /**
-     * The board space or router at {@code pos} (a part of a large tile stands for its tile): the cartridge containers
-     * whose links the Tile Linker Brush paints. Null for anything else.
+     * The board space at {@code pos} (a part of a large tile stands for its tile): the cartridge container whose links
+     * the Tile Linker Brush paints as board paths. Null for anything else (a router keeps its links itself, see
+     * {@link RouterLinks}).
      */
     public static @Nullable CartridgeContainerBlockEntity container(World world, BlockPos pos) {
-        BlockEntity blockEntity = world.getBlockEntity(BoardSpaces.resolve(world, pos));
-        if (blockEntity instanceof BoardSpaceBlockEntity || blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity) {
-            return (CartridgeContainerBlockEntity) blockEntity;
-        }
-        return null;
+        return world.getBlockEntity(BoardSpaces.resolve(world, pos)) instanceof BoardSpaceBlockEntity boardSpace ? boardSpace : null;
     }
 
     public static boolean isBoardSpace(World world, BlockPos pos) {
@@ -120,11 +117,13 @@ public final class BoardLinks {
                 WorldChunk chunk = world.getChunkManager().getWorldChunk(chunkX, chunkZ);
                 if (chunk == null) continue;
                 for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-                    if (!(blockEntity instanceof BoardSpaceBlockEntity) && !(blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity)) continue;
+                    List<BlockPos> links;
+                    if (blockEntity instanceof BoardSpaceBlockEntity boardSpace) links = links(boardSpace, slotOf(boardSpace, level));
+                    else if (blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity router) links = router.getTiles();
+                    else continue;
                     BlockPos pos = blockEntity.getPos();
                     if (Vec3d.ofCenter(pos).squaredDistanceTo(center) > radius2) continue;
-                    CartridgeContainerBlockEntity container = (CartridgeContainerBlockEntity) blockEntity;
-                    for (BlockPos target : links(container, slotOf(container, level))) {
+                    for (BlockPos target : links) {
                         if (world.getChunkManager().getWorldChunk(ChunkSectionPos.getSectionCoord(target.getX()),
                                 ChunkSectionPos.getSectionCoord(target.getZ())) == null || container(world, target) != null) continue;
                         dangling.computeIfAbsent(target, t -> new ArrayList<>()).add(pos.toImmutable());

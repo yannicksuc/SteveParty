@@ -57,6 +57,10 @@ public class BrushCartridgeLinksGameTests implements SteveGameTest {
         return ((CartridgeContainerBlockEntity) context.getWorld().getBlockEntity(absolute)).getStack(0);
     }
 
+    static List<BlockPos> tiles(TestContext context, BlockPos router) {
+        return ((fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity) context.getWorld().getBlockEntity(router)).getTiles();
+    }
+
     static List<BlockPos> chests(TestContext context, ItemStack cartridge) {
         return CartridgeContainers.in(cartridge, context.getWorld());
     }
@@ -73,12 +77,14 @@ public class BrushCartridgeLinksGameTests implements SteveGameTest {
         BlockPos other = place(context, ModBlocks.BOARD_SPACE_REDSTONE_ROUTER, new BlockPos(5, 1, 1));
         withPlayer(context, true, player -> {
             ItemStack brush = brush(player);
+            int carried = player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR);
             paint(player, brush, context, router, tile);
-            context.assertEquals(BoardLinks.links(cartridge(context, router)), List.of(tile), "the router routes the tile (a cartridge supplied)");
+            context.assertEquals(tiles(context, router), List.of(tile), "the router routes the tile");
+            context.assertEquals(player.getInventory().count(ModItems.BOARD_SPACE_BEHAVIOR), carried, "no cartridge taken: the router keeps its links");
             paint(player, brush, context, router, other);
-            context.assertEquals(BoardLinks.links(cartridge(context, router)), List.of(tile), "a router is no board space: not linked");
+            context.assertEquals(tiles(context, router), List.of(tile), "a router is no board space: not linked");
             paint(player, brush, context, router, tile);
-            context.assertEquals(BoardLinks.links(cartridge(context, router)), List.of(), "painted again: erased");
+            context.assertEquals(tiles(context, router), List.of(), "painted again: erased");
         });
     }
 

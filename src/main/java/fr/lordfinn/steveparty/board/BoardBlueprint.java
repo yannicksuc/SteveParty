@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.board;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ABoardSpaceBlock;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.ATileBlock;
@@ -119,6 +120,15 @@ public final class BoardBlueprint {
                     remapCartridges(container, follow);
                     containers.add(target);
                 }
+                if (blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity router) {
+                    // Its board spaces follow it (those that fall outside are cut)
+                    List<BlockPos> moved = new ArrayList<>();
+                    for (BlockPos tile : router.getTiles()) {
+                        BlockPos followed = follow.apply(tile);
+                        if (followed != null) moved.add(followed);
+                    }
+                    router.setTiles(moved);
+                }
                 blockEntity.markDirty();
             }
             BlockState after = world.getBlockState(target);
@@ -182,6 +192,22 @@ public final class BoardBlueprint {
         BlockBox former = box.offset(-offset.getX(), -offset.getY(), -offset.getZ());
         int moved = 0;
         for (BlockPos pos : BlockPos.iterate(box.getMinX(), box.getMinY(), box.getMinZ(), box.getMaxX(), box.getMaxY(), box.getMaxZ())) {
+            if (world.getBlockEntity(pos) instanceof BoardSpaceRedstoneRouterBlockEntity router) {
+                // Its board spaces that were in the former area follow it
+                List<BlockPos> shifted = new ArrayList<>();
+                int changed = 0;
+                for (BlockPos tile : router.getTiles()) {
+                    boolean inside = former.contains(tile);
+                    shifted.add(inside ? tile.add(offset) : tile);
+                    if (inside) changed++;
+                }
+                if (changed > 0) {
+                    LinkHistory.record(player, new LinkHistory.RouterLinksChange(pos.toImmutable(), List.copyOf(router.getTiles()), List.copyOf(shifted)));
+                    router.setTiles(shifted);
+                    moved += changed;
+                }
+                continue;
+            }
             if (!(world.getBlockEntity(pos) instanceof CartridgeContainerBlockEntity container)) continue;
             CartridgeContainerBlockEntity edited = BoardLinks.container(world, pos);
             if (edited == null) continue;

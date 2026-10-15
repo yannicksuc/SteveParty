@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
@@ -150,7 +151,8 @@ public final class BoardView {
     }
 
     private static void onBlockEntity(BlockEntity blockEntity) {
-        if (blockEntity instanceof CartridgeContainerBlockEntity || blockEntity instanceof Inventory) BoardRevision.changedOnClient();
+        if (blockEntity instanceof CartridgeContainerBlockEntity || blockEntity instanceof Inventory
+                || blockEntity instanceof BoardSpaceRedstoneRouterBlockEntity) BoardRevision.changedOnClient();
     }
 
     private static void clear() {

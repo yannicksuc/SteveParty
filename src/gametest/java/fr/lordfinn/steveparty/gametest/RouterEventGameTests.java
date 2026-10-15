@@ -47,10 +47,7 @@ public class RouterEventGameTests implements SteveGameTest {
         context.setBlockState(ROUTER.down(), Blocks.STONE);
         context.setBlockState(ROUTER, ModBlocks.BOARD_SPACE_REDSTONE_ROUTER);
         BoardSpaceRedstoneRouterBlockEntity router = context.getBlockEntity(ROUTER);
-        ItemStack cartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
-        cartridge.set(ModComponents.DESTINATIONS_COMPONENT,
-                new DestinationsComponent(new ArrayList<>(List.of(context.getAbsolutePos(TILE))), ""));
-        router.setStack(0, cartridge);
+        router.setTiles(List.of(context.getAbsolutePos(TILE)));
 
         context.setBlockState(COMPARATOR.down(), Blocks.STONE);
         context.setBlockState(COMPARATOR, Blocks.COMPARATOR.getDefaultState().with(ComparatorBlock.FACING, Direction.SOUTH));
@@ -189,5 +186,32 @@ public class RouterEventGameTests implements SteveGameTest {
 
     private static int power(TestContext context) {
         return context.getBlockState(ROUTER).get(fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlock.POWER);
+    }
+
+    /** A router saved with a cartridge (as they were before): its links become its own, the cartridge is given back. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aRouterWithACartridgeGivesItBack(TestContext context) {
+        context.setBlockState(ROUTER.down(), Blocks.STONE);
+        context.setBlockState(ROUTER, ModBlocks.BOARD_SPACE_REDSTONE_ROUTER);
+        BoardSpaceRedstoneRouterBlockEntity router = context.getBlockEntity(ROUTER);
+        BlockPos tile = context.getAbsolutePos(TILE);
+        ItemStack cartridge = new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR);
+        cartridge.set(ModComponents.DESTINATIONS_COMPONENT, new DestinationsComponent(new ArrayList<>(List.of(tile)), ""));
+        net.minecraft.nbt.NbtCompound saved = new net.minecraft.nbt.NbtCompound();
+        net.minecraft.inventory.Inventories.writeNbt(saved, net.minecraft.util.collection.DefaultedList.copyOf(ItemStack.EMPTY, cartridge),
+                context.getWorld().getRegistryManager());
+        router.read(saved, context.getWorld().getRegistryManager());
+        context.assertEquals(router.getTiles(), List.of(tile), "its cartridge's links are its own");
+        context.waitAndRun(2, () -> {
+            List<net.minecraft.entity.ItemEntity> dropped = context.getWorld().getEntitiesByClass(net.minecraft.entity.ItemEntity.class,
+                    new net.minecraft.util.math.Box(context.getAbsolutePos(ROUTER)).expand(2), item -> item.getStack().isOf(ModItems.BOARD_SPACE_BEHAVIOR));
+            context.assertEquals(dropped.size(), 1, "the cartridge given back, on the router");
+            context.assertTrue(!dropped.getFirst().getStack().contains(ModComponents.DESTINATIONS_COMPONENT), "without the links (now the router's)");
+            dropped.getFirst().discard();
+            router.markDirty();
+            net.minecraft.nbt.NbtCompound written = router.createNbt(context.getWorld().getRegistryManager());
+            context.assertTrue(!written.contains("Items"), "saved without a cartridge: given back once");
+            context.complete();
+        });
     }
 }

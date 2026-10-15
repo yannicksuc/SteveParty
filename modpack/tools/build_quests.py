@@ -291,10 +291,10 @@ q("helmet", 4, -1.5, I("explorer_helmet"), deps=["board_view"], rewards=T2(),
 
 q("wrench", -4, 0.5, I("wrench"), deps=["tile"], rewards=T2(),
   desc=(["Redstone + iron ingot.",
-         "Right-click opens tiles, Checkpoints and routers. A cartridge in the off hand swaps the tile's own, links kept.",
+         "Right-click opens tiles and Checkpoints. A cartridge in the off hand swaps the tile's own, links kept.",
          "It also sets podiums, poles and Spawn Bubbles, and breaks plastic in one hit."],
         ["Redstone + lingot de fer.",
-         "Clic droit : ouvre tuiles, Checkpoints et aiguilleurs. Une cartouche en main secondaire remplace celle de la tuile, liens gardés.",
+         "Clic droit : ouvre tuiles et Checkpoints. Une cartouche en main secondaire remplace celle de la tuile, liens gardés.",
          "Elle règle aussi podiums, mâts et Bulles d'apparition, et casse le plastique d'un coup."]))
 
 q("check_point", -6, 0.75, I("check_point", 4), deps=["tile"], rewards=T1(),
@@ -325,10 +325,10 @@ q("redstone_slots", -2.75, 2.25, C(), deps=["advanced_tile"], rewards=T1(), icon
 
 q("router", -1.25, 2.25, I("board_space_redstone_router"), deps=["advanced_tile"], rewards=T2(),
   desc=(["A tile with a switch lever: the lever leans with the power it receives, its torch lights while powered.",
-         "The destinations of its cartridge are the tiles it drives: one lever switches a whole board.",
+         "Link it to its tiles with the Tile Linker Brush: one lever switches a whole board.",
          "A comparator reads its tiles: 14 bonus, 13 malus, 10 Stop, 8 Teleport, 1 a pawn passes..."],
         ["Une case avec un levier d'aiguillage : le levier penche avec la puissance reçue, sa torche s'allume quand il est alimenté.",
-         "Les destinations de sa cartouche sont les cases qu'il pilote : un levier change tout un plateau.",
+         "Lie-le à ses cases au Pinceau lieur : un levier change tout un plateau.",
          "Un comparateur lit ses cases : 14 Bonus, 13 Malus, 10 Stop, 8 Téléportation, 1 un pion passe..."]))
 
 q("sizes", -8, -0.5, C(), deps=["tile"], rewards=T1(), icon="minecraft:stonecutter",

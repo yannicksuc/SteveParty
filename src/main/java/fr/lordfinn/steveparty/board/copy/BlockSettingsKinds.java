@@ -49,7 +49,7 @@ import java.util.function.Predicate;
 /**
  * Every kind of block whose settings the Wrench copies, and what it copies of each (the wiki's table says the same):
  * <ul>
- *     <li>the holders of cartridges (tiles, Checkpoints, routers, Hop Switches, Piggy Banks, Looting Boxes): the settings
+ *     <li>the holders of cartridges (tiles, Checkpoints, Hop Switches, Piggy Banks, Looting Boxes): the settings
  *     of their cartridges ({@link CartridgeSettings}), on the cartridges of the same kind; on the same block, its own
  *     settings too (a Hop Switch's mode and duration, a Piggy Bank's target);</li>
  *     <li>a podium: its mode; a goal pole base: what it counts and whose points; the Party Controller: its rules

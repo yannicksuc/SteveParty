@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
 import fr.lordfinn.steveparty.board.CartridgeLinks;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
@@ -148,8 +149,7 @@ public final class HelmetView {
         }
         Set<BlockPos> driven = new HashSet<>();
         for (BoardGraph.Router router : graph.routers()) {
-            CartridgeContainerBlockEntity container = BoardLinks.container(world, router.pos());
-            if (container != null) driven.addAll(BoardLinks.links(container, 0));
+            if (world.getBlockEntity(router.pos()) instanceof BoardSpaceRedstoneRouterBlockEntity routerEntity) driven.addAll(routerEntity.getTiles());
         }
         incoming = into;
         routed = driven;

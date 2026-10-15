@@ -203,6 +203,14 @@ def cartridge(slot, item, destinations, extra=''):
             % (slot, item, dest_nbt(*destinations), extra))
 
 
+def router_tiles(tiles):
+    """A router's board spaces, (x, z) at height Y (its Tiles NBT): BlockPos.asLong of each, as Minecraft packs them."""
+    def pack(x, y, z):
+        v = ((x & 0x3FFFFFF) << 38) | ((z & 0x3FFFFFF) << 12) | (y & 0xFFF)
+        return v - (1 << 64) if v >= 1 << 63 else v
+    return '{Tiles:[L;%s]}' % ','.join('%dL' % pack(x, Y, z) for x, z in tiles)
+
+
 def color(c):
     return ',"steveparty:color":%d' % c
 
@@ -288,11 +296,11 @@ def board():
         else:
             cmds.append(tile(pos, nxt, 'tile_inventory_interactor', inventory_cartridge(nxt, SHORTCUT_CHEST, True, 5)))
 
-    # Routers (placed empty, then given their cartridge: the data merge marks them dirty and routes)
+    # Routers (placed empty, then given their board spaces: the data merge marks them dirty and routes)
     for r, target, powered, lever_dx in ((router, loop[routed], 'false', 1), (TRAP_ROUTER, shortcut[trap], 'true', -1)):
         cmds += ['setblock %d %d %d minecraft:stone' % (r[0], Y - 1, r[2]),
                  'setblock %d %d %d steveparty:board_space_redstone_router' % r,
-                 'data merge block %d %d %d {Items:[%s]}' % (*r, cartridge(0, 'board_space_behavior', [target])),
+                 'data merge block %d %d %d %s' % (*r, router_tiles([target])),
                  'setblock %d %d %d minecraft:lever[face=floor,facing=east,powered=%s]'
                  % (r[0] + lever_dx, Y, r[2], powered)]
 
@@ -948,7 +956,7 @@ def showcase():
     rx, rz = SC_ROUTER
     cmds += ['setblock %d %d %d minecraft:stone' % (rx, Y - 1, rz),
              'setblock %d %d %d steveparty:board_space_redstone_router' % (rx, Y, rz),
-             'data merge block %d %d %d {Items:[%s]}' % (rx, Y, rz, cartridge(0, 'board_space_behavior', loop)),
+             'data merge block %d %d %d %s' % (rx, Y, rz, router_tiles(loop)),
              'setblock %d %d %d minecraft:comparator[facing=west,mode=compare]' % (rx + 1, Y, rz)]
     for k in range(1, 16):
         x = rx + 1 + k

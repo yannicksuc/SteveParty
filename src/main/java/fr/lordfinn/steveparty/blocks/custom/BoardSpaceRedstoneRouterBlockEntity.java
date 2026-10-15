@@ -2,23 +2,30 @@ package fr.lordfinn.steveparty.blocks.custom;
 
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.board.BoardPerf;
+import fr.lordfinn.steveparty.board.BoardRevision;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
-import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
-import fr.lordfinn.steveparty.screen_handlers.custom.RouterScreenHandler;
+import fr.lordfinn.steveparty.components.DestinationsComponent;
+import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.inventory.Inventories;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.Packet;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTask;
-import net.minecraft.util.math.Direction;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
+import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
@@ -26,25 +33,35 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Gives its redstone power to the board spaces listed by its cartridge: that power selects their active cartridge.
+ * Gives its redstone power to the board spaces it is linked to (painted with the Tile Linker Brush and kept by the
+ * block itself, see RouterLinks): that power selects their active cartridge. No cartridge, no screen.
  * <p>
- * Everything is pushed on change: the routing is updated when the cartridge changes, and the power is pushed to the
+ * Everything is pushed on change: the routing is updated when its links change, and the power is pushed to the
  * routed board spaces when the router's own power changes. Board spaces never poll their router.
  * <p>
  * It is also a sensor: a comparator reading it outputs a pulse when a token stops on one of its board spaces (its
  * strength tells the tile's role, see {@link #landingSignal}) and a short weak pulse when a token goes over one
  * ({@link #PASS_SIGNAL}). The pulse ends through a scheduled tick of the block: nothing ticks in between.
  */
-public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlockEntity implements GeoBlockEntity {
+public class BoardSpaceRedstoneRouterBlockEntity extends BlockEntity implements GeoBlockEntity {
+    /** Its board spaces, saved and sent to the clients (the brush and the board views draw them). */
+    private static final String TILES = "Tiles";
+    /** Routers saved with a cartridge (they held one before): its links become theirs, the cartridge is given back. */
+    private static final String LEGACY_ITEMS = "Items";
     /** Comparator level while a token goes over a routed board space. */
     public static final int PASS_SIGNAL = 1;
     /** Pulse lengths, in game ticks. */
     public static final int LANDING_TICKS = 10, PASS_TICKS = 4;
 
+    /** The board spaces it drives, in the order they were linked. */
+    private List<BlockPos> tiles = List.of();
+    /** Server side, a router loaded with a cartridge: given back (dropped on it) once its world is there. */
+    private ItemStack legacyCartridge = ItemStack.EMPTY;
     private List<BlockPos> routedBoardSpaces = List.of();
     /**
      * The power last pushed to the routed board spaces (-1: none yet). Neighbour updates come in bursts (redstone dust,
@@ -62,18 +79,29 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     public float leverAngle = Float.NaN, leverTime;
 
     public BoardSpaceRedstoneRouterBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.BOARD_SPACE_REDSTONE_ROUTER_ENTITY, pos, state, 1);
+        super(ModBlockEntities.BOARD_SPACE_REDSTONE_ROUTER_ENTITY, pos, state);
     }
 
-    @Override
-    public Text getDisplayName() {
-        return Text.empty(); //"block.steveparty.board_space_redstone_router"
+    /** The board spaces it drives. */
+    public List<BlockPos> getTiles() {
+        return tiles;
+    }
+
+    /** Links it to {@code tiles} (server side): saved, re-routed and sent to the clients. */
+    public void setTiles(List<BlockPos> tiles) {
+        this.tiles = tiles.stream().map(BlockPos::toImmutable).toList();
+        markDirty();
+        if (world != null && !world.isClient) {
+            BlockState state = getCachedState();
+            world.updateListeners(pos, state, state, Block.NOTIFY_ALL);
+        }
     }
 
     @Override
     public void markDirty() {
         super.markDirty();
-        // The cartridge's destinations may have been edited in place: re-route only if they really changed
+        BoardRevision.changed(world);
+        // Its links may have been edited (brush, undo, /data): re-route only if they really changed
         updateRouting();
     }
 
@@ -116,7 +144,7 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
 
     private void updateRouting() {
         if (!(this.world instanceof ServerWorld serverWorld)) return;
-        List<BlockPos> destinations = List.copyOf(getDestinations(0));
+        List<BlockPos> destinations = tiles;
         if (destinations.equals(routedBoardSpaces)) return;
         routedBoardSpaces = destinations;
         Set<BlockPos> changed = BoardSpaceRoutersPersistentState.get(serverWorld).setRoutedBoardSpaces(this.pos, destinations);
@@ -256,19 +284,68 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     @Override
     public void setWorld(World world) {
         super.setWorld(world);
-        // Rebuild the in-memory routing list from the cartridge (the persistent state already holds the mapping)
-        this.routedBoardSpaces = List.copyOf(getDestinations(0));
+        // Rebuild the in-memory routing list from its links (the persistent state already holds the mapping)
+        this.routedBoardSpaces = tiles;
         // Its lever and torch show its power: routers saved before had none, and power may have changed while unloaded.
-        // Queued: the chunk is still loading here
+        // Queued: the chunk is still loading here. A router saved with a cartridge gives it back then.
         if (world instanceof ServerWorld serverWorld) {
             MinecraftServer server = serverWorld.getServer();
-            server.send(new ServerTask(server.getTicks(), () -> showPower(-1)));
+            server.send(new ServerTask(server.getTicks(), () -> {
+                showPower(-1);
+                giveBackLegacyCartridge();
+            }));
         }
     }
 
+    /** Drops the cartridge it held before (its links are now its own): a player's item is never lost. */
+    private void giveBackLegacyCartridge() {
+        if (legacyCartridge.isEmpty() || isRemoved() || world == null) return;
+        ItemStack cartridge = legacyCartridge;
+        legacyCartridge = ItemStack.EMPTY;
+        ItemScatterer.spawn(world, pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5, cartridge);
+        markDirty();
+    }
+
     @Override
-    public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-        return new RouterScreenHandler(syncId, playerInventory, this);
+    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
+        super.writeNbt(nbt, registries);
+        nbt.putLongArray(TILES, tiles.stream().mapToLong(BlockPos::asLong).toArray());
+    }
+
+    @Override
+    protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
+        super.readNbt(nbt, registries);
+        List<BlockPos> read = new ArrayList<>();
+        for (long packed : nbt.getLongArray(TILES)) read.add(BlockPos.fromLong(packed));
+        if (nbt.contains(LEGACY_ITEMS, NbtElement.LIST_TYPE)) {
+            DefaultedList<ItemStack> slots = DefaultedList.ofSize(1, ItemStack.EMPTY);
+            Inventories.readNbt(nbt, slots, registries);
+            ItemStack cartridge = slots.getFirst();
+            if (!cartridge.isEmpty()) {
+                DestinationsComponent links = cartridge.get(ModComponents.DESTINATIONS_COMPONENT);
+                if (links != null) for (BlockPos tile : links.destinations()) if (!read.contains(tile)) read.add(tile.toImmutable());
+                cartridge.remove(ModComponents.DESTINATIONS_COMPONENT);
+                legacyCartridge = cartridge;
+            }
+        }
+        tiles = List.copyOf(read);
+        BoardRevision.changed(world); // new links from the server
+        // Data given to a router already in its world (/data, a structure): its cartridge is given back too
+        if (!legacyCartridge.isEmpty() && world instanceof ServerWorld serverWorld) {
+            MinecraftServer server = serverWorld.getServer();
+            server.send(new ServerTask(server.getTicks(), this::giveBackLegacyCartridge));
+        }
+    }
+
+    /** Its links are sent to the clients (on load and on each change): the brush and the board views draw them. */
+    @Override
+    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+        return createNbt(registries);
+    }
+
+    @Override
+    public @Nullable Packet<ClientPlayPacketListener> toUpdatePacket() {
+        return BlockEntityUpdateS2CPacket.create(this);
     }
 
     @Override

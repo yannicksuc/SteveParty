@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.board;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyBoard;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyController;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
@@ -308,7 +309,19 @@ public final class WrenchActions {
         if (!(placed instanceof BoardSpaceBlockEntity)) return;
         BlockPos anchor = TileLinkerBrush.anchor(brush, world);
         CartridgeContainerBlockEntity anchorContainer = anchor == null ? null : BoardLinks.container(world, anchor);
+        BoardSpaceRedstoneRouterBlockEntity anchorRouter = anchor != null
+                && world.getBlockEntity(anchor) instanceof BoardSpaceRedstoneRouterBlockEntity router ? router : null;
         recorded(player, world, brush, () -> {
+            // From an Aiguilleur: the space is one it drives (its own links, no cartridge), the path goes on from it
+            if (anchorRouter != null) {
+                double distance = Math.sqrt(anchor.getSquaredDistance(pos));
+                if (distance > AUTO_LINK_DISTANCE) {
+                    warn(player, Text.translatable("message.steveparty.tile_linker_brush.too_far", (int) Math.round(distance), (int) AUTO_LINK_DISTANCE));
+                    return;
+                }
+                if (new RouterLinks.Tiles(anchorRouter).link(player, serverWorld, pos)) TileLinkerBrush.setAnchor(brush, world, pos);
+                return;
+            }
             // A start tile placed: nothing links into it, the path goes on from it
             if (anchorContainer == null || PartyBoard.isStart(world, pos)) {
                 TileLinkerBrush.setAnchor(brush, world, pos);
