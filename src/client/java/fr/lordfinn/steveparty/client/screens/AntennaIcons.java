@@ -28,12 +28,12 @@ import java.util.Map;
 /**
  * What shows a Party Antenna's moments: an item of the game for each (the item says what, the button's colour says the
  * family), with a small badge where the item alone does not say it (a gain, a loss, a stop, done). The badges and the
- * screen's controls come from {@code antenna_icons.png} (16 x 16 cells: badges 0-3, controls from 32).
+ * screen's controls come from {@code antenna_icons.png} (16 x 16 cells: badges 0-3, controls from 33).
  */
 public final class AntennaIcons {
     public static final Identifier SHEET = Steveparty.id("textures/gui/antenna_icons.png");
     public static final int BADGE_PLUS = 0, BADGE_MINUS = 1, BADGE_CHECK = 3;
-    public static final int PULSE = 32, WAIT = 33, FILTER_ANY = 34, FILTER_EQUAL = 35, FILTER_AT_LEAST = 36, FILTER_AT_MOST = 37,
+    public static final int WAIT = 33, FILTER_ANY = 34, FILTER_EQUAL = 35, FILTER_AT_LEAST = 36, FILTER_AT_MOST = 37,
             MINUS = 38, PLUS = 39, TEST = 40;
 
     /**
