@@ -59,8 +59,8 @@ public class PartyBellBlock extends Block implements BlockEntityProvider {
     public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
     /** Synced block events: it caught a moment (its receiver lights, its dish pulses); a click without the Wrench (it blinks). */
     public static final int RING_EVENT = 1, BLINK_EVENT = 2;
-    /** Length of the pulse: 2 redstone ticks. */
-    public static final int PULSE_TICKS = 4;
+    /** Length of the pulse: 1 redstone tick, as an observer's. */
+    public static final int PULSE_TICKS = 2;
 
     /** The redstone plate of the other redstone blocks, its box and the mast (what you bump into). */
     private static final VoxelShape BODY = VoxelShapes.union(
