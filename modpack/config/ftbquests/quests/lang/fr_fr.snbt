@@ -819,7 +819,7 @@
 	]
 	quest.42D5C0FDC568C5B3.title: "Maître des pions"
 	quest.43758D7B5C5F556E.quest_desc: [
-		"Or, torche de redstone, coffre et éclat d'améthyste."
+		"Une case avec un levier d'aiguillage : le levier penche avec la puissance reçue, sa torche s'allume quand il est alimenté."
 		"Les destinations de sa cartouche sont les cases qu'il pilote : un levier change tout un plateau."
 		"Un comparateur lit ses cases : 14 Bonus, 13 Malus, 10 Stop, 8 Téléportation, 1 un pion passe..."
 	]

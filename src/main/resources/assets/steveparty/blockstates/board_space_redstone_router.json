@@ -1,5 +1,52 @@
 {
   "variants": {
-    "": { "model": "steveparty:block/board_space_redstone_router" }
+    "power=0": {
+      "model": "steveparty:block/board_space_redstone_router"
+    },
+    "power=1": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=2": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=3": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=4": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=5": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=6": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=7": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=8": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=9": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=10": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=11": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=12": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=13": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=14": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    },
+    "power=15": {
+      "model": "steveparty:block/board_space_redstone_router_on"
+    }
   }
 }

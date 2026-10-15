@@ -577,6 +577,7 @@ public class ModBlocks {
             Block.Settings.create()
                     .strength(3.0f, BOARD_RESISTANCE)
                     .sounds(BlockSoundGroup.METAL)  // Stone-like sound for a mechanical device
+                    .nonOpaque()
                     .requiresTool(),  // Requires a pickaxe or equivalent tool to break
             "board_space_redstone_router", true);
     public static final Block HOP_SWITCH = register(HopSwitchBlock::new,

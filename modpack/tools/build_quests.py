@@ -324,10 +324,10 @@ q("redstone_slots", -2.75, 2.25, C(), deps=["advanced_tile"], rewards=T1(), icon
          "Avec un compteur redstone, la case change à chaque tour."]))
 
 q("router", -1.25, 2.25, I("board_space_redstone_router"), deps=["advanced_tile"], rewards=T2(),
-  desc=(["Gold, a redstone torch, a chest and an amethyst shard.",
+  desc=(["A tile with a switch lever: the lever leans with the power it receives, its torch lights while powered.",
          "The destinations of its cartridge are the tiles it drives: one lever switches a whole board.",
          "A comparator reads its tiles: 14 bonus, 13 malus, 10 Stop, 8 Teleport, 1 a pawn passes..."],
-        ["Or, torche de redstone, coffre et éclat d'améthyste.",
+        ["Une case avec un levier d'aiguillage : le levier penche avec la puissance reçue, sa torche s'allume quand il est alimenté.",
          "Les destinations de sa cartouche sont les cases qu'il pilote : un levier change tout un plateau.",
          "Un comparateur lit ses cases : 14 Bonus, 13 Malus, 10 Stop, 8 Téléportation, 1 un pion passe..."]))
 

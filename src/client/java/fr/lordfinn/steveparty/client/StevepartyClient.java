@@ -8,6 +8,7 @@ import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEntity;
 import fr.lordfinn.steveparty.client.blockentity.FrousseuxCandleHolderRenderer;
 import fr.lordfinn.steveparty.client.blockentity.PartyControllerInfinityRenderer;
 import fr.lordfinn.steveparty.client.blockentity.PodiumRenderer;
+import fr.lordfinn.steveparty.client.blockentity.RouterLeverRenderer;
 import fr.lordfinn.steveparty.client.blockentity.StencilCanvasBlockEntityRenderer;
 import fr.lordfinn.steveparty.client.blockentity.VillagerBlockEntityRenderer;
 import fr.lordfinn.steveparty.client.board.BrushClient;
@@ -422,6 +423,10 @@ public class StevepartyClient implements ClientModInitializer {
         TileStampTooltipComponent.register();
         TileBlockEntityRenderer.registerReloadListener();
         BlockEntityRendererFactories.register(ModBlockEntities.STEP_CONTROLLER_ENTITY, StepControllerBlockEntityRenderer::new);
+        // The Aiguilleur's lever leans with the power it receives: drawn by its renderer, as its item
+        BlockEntityRendererFactories.register(ModBlockEntities.BOARD_SPACE_REDSTONE_ROUTER_ENTITY, context -> new RouterLeverRenderer());
+        BuiltinItemRendererRegistry.INSTANCE.register(ModBlocks.BOARD_SPACE_REDSTONE_ROUTER, RouterLeverRenderer.ITEM);
+        BlockRenderLayerMap.INSTANCE.putBlock(ModBlocks.BOARD_SPACE_REDSTONE_ROUTER, RenderLayer.getCutout());
         BlockEntityRendererFactories.register(ModBlockEntities.PARTY_CONTROLLER_ENTITY, PartyControllerInfinityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.EASEL_SIGN_ENTITY, StencilCanvasBlockEntityRenderer::new);
         BlockEntityRendererFactories.register(ModBlockEntities.STENCIL_CANVAS, StencilCanvasBlockEntityRenderer::new);

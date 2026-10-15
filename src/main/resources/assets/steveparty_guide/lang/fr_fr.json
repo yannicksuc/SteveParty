@@ -67,7 +67,7 @@
   "book.steveparty.guide.board.placing.page1.title": "Pentes",
   "book.steveparty.guide.board.router.description": "Piloter plusieurs cases",
   "book.steveparty.guide.board.router.name": "Aiguilleur",
-  "book.steveparty.guide.board.router.page0.text": "Ses destinations : les cases qu'il pilote.\\\n\\\nSa puissance [#](1C4E80)**remplace**[#]() la leur : un levier, tout un plateau.",
+  "book.steveparty.guide.board.router.page0.text": "Ses destinations : les cases qu'il pilote.\\\n\\\nSa puissance [#](1C4E80)**remplace**[#]() la leur : un levier, tout un plateau.\\\n\\\nSon levier montre sa puissance : penché d'un côté à 0, de l'autre à 15. Sa torche s'allume dès qu'il est alimenté.",
   "book.steveparty.guide.board.router.page0.title": "Aiguilleur",
   "book.steveparty.guide.board.router.page1.text": "- 15 case simple · 14 bonus · 13 malus\n- 11 départ · 10 Stop · 9 Rejouer\n- 8 Téléportation · 7 avancer · 6 reculer\n- 5 boutique · 1 un pion passe",
   "book.steveparty.guide.board.router.page1.title": "Son comparateur",

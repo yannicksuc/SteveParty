@@ -166,4 +166,28 @@ public class RouterEventGameTests implements SteveGameTest {
             });
         });
     }
+
+    /** Its lever and torch show the power it receives: its state follows it, routing or not. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void itsStateShowsItsPower(TestContext context) {
+        setUp(context);
+        context.assertEquals(power(context), 0, "no power: lever at 0, torch off");
+        context.setBlockState(ROUTER.east(), Blocks.REDSTONE_BLOCK);
+        context.assertEquals(power(context), 15, "a redstone block: lever at 15, torch lit");
+        context.removeBlock(ROUTER.east());
+        BlockPos dust = ROUTER.east(), far = dust.east(), source = far.east();
+        for (BlockPos pos : List.of(dust, far)) {
+            context.setBlockState(pos.down(), Blocks.STONE);
+            context.setBlockState(pos, Blocks.REDSTONE_WIRE);
+        }
+        context.setBlockState(source, Blocks.REDSTONE_BLOCK);
+        context.assertEquals(power(context), 14, "two dusts from a redstone block: 14");
+        context.removeBlock(source);
+        context.assertEquals(power(context), 0, "back to 0");
+        context.complete();
+    }
+
+    private static int power(TestContext context) {
+        return context.getBlockState(ROUTER).get(fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlock.POWER);
+    }
 }

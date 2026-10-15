@@ -7,7 +7,11 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockE
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileFeedback;
 import fr.lordfinn.steveparty.screen_handlers.custom.RouterScreenHandler;
 import fr.lordfinn.steveparty.persistent_state.BoardSpaceRoutersPersistentState;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.ServerTask;
+import net.minecraft.util.math.Direction;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -17,6 +21,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.animatable.GeoBlockEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
 import java.util.Set;
@@ -31,7 +39,7 @@ import java.util.Set;
  * strength tells the tile's role, see {@link #landingSignal}) and a short weak pulse when a token goes over one
  * ({@link #PASS_SIGNAL}). The pulse ends through a scheduled tick of the block: nothing ticks in between.
  */
-public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlockEntity {
+public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlockEntity implements GeoBlockEntity {
     /** Comparator level while a token goes over a routed board space. */
     public static final int PASS_SIGNAL = 1;
     /** Pulse lengths, in game ticks. */
@@ -47,6 +55,11 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
     /** Comparator output of the current pulse (0: none) and the game time it ends at. Not saved: pulses are short. */
     private int signal;
     private long signalEnd;
+
+    /** Its lever, drawn by GeckoLib (no animation: the renderer sets its angle). */
+    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    /** Client only: the lever's drawn angle (degrees, NaN until first drawn) and the time it was drawn at (ticks). */
+    public float leverAngle = Float.NaN, leverTime;
 
     public BoardSpaceRedstoneRouterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.BOARD_SPACE_REDSTONE_ROUTER_ENTITY, pos, state, 1);
@@ -69,10 +82,27 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
         return world == null ? 0 : world.getReceivedRedstonePower(pos);
     }
 
+    /**
+     * Puts its received power (-1: read it) in its state (its lever and torch), if its neighbours are loaded (reading an
+     * unloaded one would load its chunk). Listeners only: no block update to its neighbours.
+     */
+    private void showPower(int power) {
+        if (!(world instanceof ServerWorld serverWorld) || isRemoved()) return;
+        BlockState state = serverWorld.getBlockState(pos);
+        if (!state.contains(BoardSpaceRedstoneRouterBlock.POWER)) return;
+        for (Direction side : Direction.Type.HORIZONTAL) {
+            if (!serverWorld.isChunkLoaded(pos.offset(side))) return;
+        }
+        if (power < 0) power = getPower();
+        if (state.get(BoardSpaceRedstoneRouterBlock.POWER) != power)
+            serverWorld.setBlockState(pos, state.with(BoardSpaceRedstoneRouterBlock.POWER, power), Block.NOTIFY_LISTENERS);
+    }
+
     /** Called when the router's neighbors (and so maybe its power) changed. */
     public void pushPowerToBoardSpaces() {
         if (!(this.world instanceof ServerWorld serverWorld)) return;
         int power = getPower();
+        showPower(power);
         if (power == pushedPower) return;
         pushedPower = power;
         for (BlockPos boardSpacePos : routedBoardSpaces) {
@@ -223,10 +253,25 @@ public class BoardSpaceRedstoneRouterBlockEntity extends CartridgeContainerBlock
         super.setWorld(world);
         // Rebuild the in-memory routing list from the cartridge (the persistent state already holds the mapping)
         this.routedBoardSpaces = List.copyOf(getDestinations(0));
+        // Its lever and torch show its power: routers saved before had none, and power may have changed while unloaded.
+        // Queued: the chunk is still loading here
+        if (world instanceof ServerWorld serverWorld) {
+            MinecraftServer server = serverWorld.getServer();
+            server.send(new ServerTask(server.getTicks(), () -> showPower(-1)));
+        }
     }
 
     @Override
     public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
         return new RouterScreenHandler(syncId, playerInventory, this);
+    }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return cache;
     }
 }
