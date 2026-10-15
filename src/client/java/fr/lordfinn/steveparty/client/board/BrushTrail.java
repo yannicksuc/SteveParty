@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.client.board;
 
+import fr.lordfinn.steveparty.blocks.custom.BoardSpaceRedstoneRouterBlockEntity;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaces;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.TileShape;
@@ -7,6 +8,7 @@ import fr.lordfinn.steveparty.board.BoardLinks;
 import fr.lordfinn.steveparty.board.BrushLinkable;
 import fr.lordfinn.steveparty.board.BrushLinks;
 import fr.lordfinn.steveparty.board.CartridgeLinks;
+import fr.lordfinn.steveparty.board.RouterLinks;
 import fr.lordfinn.steveparty.board.BrushAim;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeSpawnMarker;
@@ -457,7 +459,8 @@ final class BrushTrail {
 
     /**
      * The live preview of the held stroke: arrows flowing along its links, and along those leaving the aimed tile; a
-     * link to a Spawn Bubble is dotted (in the bubble's colours when painted, see {@link WorldDraw#bubbleLink}).
+     * link to a Spawn Bubble is dotted (in the bubble's colours when painted, see {@link WorldDraw#bubbleLink}), and so
+     * is a router's (red when painted, see {@link WorldDraw#routerLink}).
      */
     private static void arrows(WorldRenderContext context, MinecraftClient client, VertexConsumerProvider.Immediate consumers, float now) {
         ClientPlayerEntity player = client.player;
@@ -470,6 +473,15 @@ final class BrushTrail {
             if (mark.fromTile != null && CartridgeSpawnMarker.accepts(client.world, mark.toTile)) {
                 if (mark.outcome == LINKED) {
                     WorldDraw.bubbleLink(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0.95f, seconds);
+                } else {
+                    int outcome = mark.outcome;
+                    WorldDraw.dotted(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0.95f, seconds * 0.35, t -> outcome);
+                }
+                continue;
+            }
+            if (mark.fromTile != null && client.world.getBlockEntity(mark.fromTile) instanceof BoardSpaceRedstoneRouterBlockEntity) {
+                if (mark.outcome == LINKED) {
+                    WorldDraw.routerLink(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0.95f, seconds);
                 } else {
                     int outcome = mark.outcome;
                     WorldDraw.dotted(matrices, consumers, context.camera(), mark.from.add(up), mark.to.add(up), 0.95f, seconds * 0.35, t -> outcome);
@@ -490,6 +502,11 @@ final class BrushTrail {
                     if (inStroke(aimed, to) || (kind instanceof CartridgeLinks.BoardPaths && BoardLinks.container(client.world, to) == null)) continue;
                     if (kind instanceof CartridgeLinks.SpawnPoint) {
                         WorldDraw.bubbleLink(matrices, consumers, context.camera(), from,
+                                BoardSpaces.standPos(client.world, to).add(0, LIFT, 0).add(up), BrushOverlay.DOTS_ALPHA, seconds);
+                        continue;
+                    }
+                    if (kind instanceof RouterLinks.Tiles) {
+                        WorldDraw.routerLink(matrices, consumers, context.camera(), from,
                                 BoardSpaces.standPos(client.world, to).add(0, LIFT, 0).add(up), BrushOverlay.DOTS_ALPHA, seconds);
                         continue;
                     }
