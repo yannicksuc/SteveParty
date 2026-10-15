@@ -3,6 +3,7 @@ package fr.lordfinn.steveparty.client.screens;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrencyText;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyCurrency;
 import fr.lordfinn.steveparty.client.blockentity.TrapMarkRenderer;
+import fr.lordfinn.steveparty.client.gui.ButtonIcons;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
@@ -56,8 +57,8 @@ public class TrapSetupScreen extends Screen {
             kindButtons.add(button);
         }
         int right = (width + PANEL_W) / 2 - PAD;
-        minus = addDrawableChild(new PartyButton(right - 70, 0, 20, 20, Text.literal("-"), b -> step(-1)));
-        plus = addDrawableChild(new PartyButton(right - 20, 0, 20, 20, Text.literal("+"), b -> step(1)));
+        minus = addDrawableChild(new PartyButton(right - 70, 0, 20, 20, Text.literal("-"), b -> step(-1)).icon(ButtonIcons.Icon.MINUS));
+        plus = addDrawableChild(new PartyButton(right - 20, 0, 20, 20, Text.literal("+"), b -> step(1)).icon(ButtonIcons.Icon.PLUS));
         int half = (PANEL_W - 2 * PAD - GAP) / 2;
         cancel = addDrawableChild(new PartyButton(left, 0, half, 20, Text.translatable(K + "cancel"), b -> close()));
         signButton = addDrawableChild(new PartyButton(left + half + GAP, 0, half, 20, Text.translatable(K + "sign"), b -> sign()))

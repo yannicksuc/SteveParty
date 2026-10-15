@@ -5,6 +5,7 @@ import fr.lordfinn.steveparty.blocks.ModBlocks;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlock;
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
+import fr.lordfinn.steveparty.client.gui.ButtonIcons;
 import fr.lordfinn.steveparty.client.gui.ComparisonGlyphs;
 import fr.lordfinn.steveparty.client.gui.PartyGui;
 import fr.lordfinn.steveparty.client.gui.UiText;
@@ -46,8 +47,8 @@ import java.util.List;
 public class AntennaScreen extends Screen {
     private static final int W = 176, H = 186;
     private static final int CELL = 22, BUTTON = 20, GRID_X = 16, GRID_Y = 18;
-    /** The value field: wide enough for « ≥ 15 ». */
-    private static final int VALUE_W = 32;
+    /** The value field: wide enough for « ≥ 15 » and « 0-15 ». */
+    private static final int VALUE_W = 30;
     private static final int CONTROLS_Y = 158, HEARD_Y = 136, SEPARATOR_Y = 130;
     private static final Identifier TEXTURE = Steveparty.id("textures/gui/antenna_screen.png");
     /** On the title plate: from its face to a joint, from a joint to the title. */
@@ -58,8 +59,10 @@ public class AntennaScreen extends Screen {
     /** The block's anthracite (title plate, value box). */
     private static final PartyGui.Theme ANTHRACITE = new PartyGui.Theme(0xFF151519, 0xFF54545C, 0xFF2C2C31, 0xFF212125);
     /** The filter's sign on its light key: the anthracite of the plates. */
-    private static final int SIGN = 0xFF2C2C31, SIGN_DISABLED = 0xFF8C939A;
-    private static final int OUTLINE = 0xFF151519, CONTROL = 0xFFEEF3F6, DISABLED = 0xFFC8CED4;
+    private static final int SIGN = 0xFF2C2C31;
+    /** A key out of use: the mod's disabled button (flat grey face, dark grey ink), as every screen's. */
+    private static final int SIGN_DISABLED = PartyGui.DISABLED_INK, DISABLED = 0xFFA8A8A8;
+    private static final int OUTLINE = 0xFF151519, CONTROL = 0xFFEEF3F6;
     private static final int RECEIVER = 0xFFFF2B1A, RECEIVER_GLOW = 0xFFFF9C88, RECEIVER_DARK = 0xFF2A0604;
     private static final int TEXT_VALUE = 0xFF1E5E91, TEXT_SOFT = 0xFF4A6882;
     /** How long the receiver's LED stays lit after a moment is heard, in ticks. */
@@ -79,10 +82,11 @@ public class AntennaScreen extends Screen {
 
     private static final List<Control> CONTROLS = List.of(
             new Control("hold", GRID_X, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("filter", 43, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("minus", 65, CONTROLS_Y, BUTTON, BUTTON),
-            new Control("value", 87, CONTROLS_Y, VALUE_W, BUTTON),
-            new Control("plus", 121, CONTROLS_Y, BUTTON, BUTTON),
+            // The filter's group 8 px from the hold toggle and from the test key, its keys 2 px apart
+            new Control("filter", 44, CONTROLS_Y, BUTTON, BUTTON),
+            new Control("minus", 66, CONTROLS_Y, BUTTON, BUTTON),
+            new Control("value", 88, CONTROLS_Y, VALUE_W, BUTTON),
+            new Control("plus", 120, CONTROLS_Y, BUTTON, BUTTON),
             new Control("test", GRID_X + CELL * 6, CONTROLS_Y, BUTTON, BUTTON));
 
     public AntennaScreen(BlockPos pos) {
@@ -203,30 +207,42 @@ public class AntennaScreen extends Screen {
         boolean canWait = current.canWait();
         boolean testable = !inParty;
         holdButton(context, waiting, waitApplies, hoveredControl);
-        // The filter key: the shared comparison glyph, twice the font as the keys' icons; the field writes it as text
-        Control filterControl = control("filter");
-        button(context, filterControl, -1, false, true, hoveredControl);
+        // The filter key: its sign from the mod's button icons (✱: any value); the field writes it as text
+        button(context, control("filter"), switch (filter) {
+            case ANY -> ButtonIcons.Icon.ANY;
+            case EQUAL -> ButtonIcons.Icon.EQUAL;
+            case AT_LEAST -> ButtonIcons.Icon.GREATER_OR_EQUAL;
+            case AT_MOST -> ButtonIcons.Icon.LESS_OR_EQUAL;
+        }, true, hoveredControl);
         ComparisonGlyphs.Sign sign = switch (filter) {
             case ANY -> ComparisonGlyphs.Sign.ANY;
             case EQUAL -> ComparisonGlyphs.Sign.EQUAL;
             case AT_LEAST -> ComparisonGlyphs.Sign.GREATER_OR_EQUAL;
             case AT_MOST -> ComparisonGlyphs.Sign.LESS_OR_EQUAL;
         };
-        ComparisonGlyphs.drawCentred(context, sign, left + filterControl.x() + filterControl.w() / 2, top + filterControl.y() + filterControl.h() / 2, SIGN, 2);
         boolean valued = filter != PartyBellBlockEntity.Filter.ANY;
-        button(context, control("minus"), AntennaIcons.MINUS, false, valued && antenna.getFilterValue() > 0, hoveredControl);
-        button(context, control("plus"), AntennaIcons.PLUS, false, valued && antenna.getFilterValue() < 15, hoveredControl);
-        button(context, control("test"), AntennaIcons.TEST, false, testable, hoveredControl);
+        button(context, control("minus"), ButtonIcons.Icon.MINUS, valued && antenna.getFilterValue() > 0, hoveredControl);
+        button(context, control("plus"), ButtonIcons.Icon.PLUS, valued && antenna.getFilterValue() < 15, hoveredControl);
+        testButton(context, testable, hoveredControl);
         Control value = control("value");
         if (valued) PartyGui.button(context, left + value.x(), top + value.y(), value.w(), value.h(), ANTHRACITE, true);
         else face(context, left + value.x(), top + value.y(), value.w(), value.h(), DISABLED, false, false, true);
-        // « ≥ 5 » as one label: the sign, the font's space, the value, centred on the field (its digits' row)
-        String digits = valued ? Integer.toString(antenna.getFilterValue()) : "";
-        int labelW = ComparisonGlyphs.WIDTH + (valued ? ComparisonGlyphs.SPACE + textRenderer.getWidth(digits) - 1 : 0);
-        int labelX = left + value.x() + (value.w() - labelW + 1) / 2, labelY = top + value.y() + 6;
-        ComparisonGlyphs.draw(context, sign, labelX, labelY, valued ? 0xFFFFFFFF : SIGN_DISABLED, valued, 1);
-        if (valued) UiText.line(context, textRenderer, Text.literal(digits), labelX + ComparisonGlyphs.WIDTH + ComparisonGlyphs.SPACE, labelY,
-                textRenderer.getWidth(digits), 0xFFFFFFFF, true);
+        // « ≥ 5 » as one label: the sign, the font's space, the value, centred on the field (its digits' row); any
+        // value: the whole range, « 0-15 », greyed
+        int labelY = top + value.y() + 6;
+        if (valued) {
+            String digits = Integer.toString(antenna.getFilterValue());
+            int labelW = ComparisonGlyphs.WIDTH + ComparisonGlyphs.SPACE + textRenderer.getWidth(digits) - 1;
+            int labelX = left + value.x() + (value.w() - labelW + 1) / 2;
+            ComparisonGlyphs.draw(context, sign, labelX, labelY, 0xFFFFFFFF, true, 1);
+            UiText.line(context, textRenderer, Text.literal(digits), labelX + ComparisonGlyphs.WIDTH + ComparisonGlyphs.SPACE, labelY,
+                    textRenderer.getWidth(digits), 0xFFFFFFFF, true);
+        } else {
+            String range = "0-15";
+            int rangeW = textRenderer.getWidth(range) - 1;
+            UiText.line(context, textRenderer, Text.literal(range), left + value.x() + (value.w() - rangeW + 1) / 2, labelY,
+                    rangeW + 1, SIGN_DISABLED, false);
+        }
 
         drawTooltip(context, antenna, current, hovered, hoveredControl, mouseX, mouseY, canWait, testable, inParty, waiting);
     }
@@ -366,23 +382,35 @@ public class AntennaScreen extends Screen {
         int x = left + control.x(), y = top + control.y();
         boolean pressed = enabled && (on || control.id().equals(held));
         face(context, x, y, control.w(), control.h(), enabled ? CONTROL : DISABLED, pressed, enabled && hovered == control, !enabled);
-        // Off: its hourglass out (grey sand), opaque: the see-through look is for what can't be used
-        AntennaIcons.cell(context, enabled && !on ? AntennaIcons.WAIT_OFF : AntennaIcons.WAIT, x + 2, y + 2);
-        if (!enabled) context.fill(x + 2, y + 2, x + control.w() - 2, y + control.h() - 2, 0x99C8CED4);
+        // Off: its hourglass out (lying down), opaque: the see-through look is for what can't be used
+        ButtonIcons.draw(context, enabled && !on ? ButtonIcons.Icon.HOURGLASS_OFF : ButtonIcons.Icon.HOURGLASS, x, y, control.w(), control.h(), 0xFFFFFFFF);
+        if (!enabled) context.fill(x + 2, y + 2, x + control.w() - 2, y + control.h() - 2, 0x99A8A8A8);
     }
 
     /**
-     * A control button: its glyph (-1: none, drawn by the caller), pressed in while held or when it is the chosen
-     * toggle; dimmed when it can't be used.
+     * A control key: its icon (the mod's button icons) in the plates' anthracite, pressed in while held (the icon stays
+     * on its pixels); flat with a grey icon when it can't be used.
      */
-    private void button(DrawContext context, Control control, int glyph, boolean chosen, boolean enabled, @Nullable Control hovered) {
+    private void button(DrawContext context, Control control, ButtonIcons.Icon icon, boolean enabled, @Nullable Control hovered) {
         int x = left + control.x(), y = top + control.y();
         boolean pressed = enabled && control.id().equals(held);
-        face(context, x, y, control.w(), control.h(), enabled ? CONTROL : DISABLED, pressed || chosen,
-                enabled && hovered == control, !enabled);
-        if (chosen) selected(context, x, y, control.w(), control.h());
-        if (glyph >= 0) AntennaIcons.cell(context, glyph, x + (control.w() - 16) / 2, y + 2);
-        if (!enabled) context.fill(x + 2, y + 2, x + control.w() - 2, y + control.h() - 2, 0x99C8CED4);
+        face(context, x, y, control.w(), control.h(), enabled ? CONTROL : DISABLED, pressed, enabled && hovered == control, !enabled);
+        ButtonIcons.draw(context, icon, x, y, control.w(), control.h(), enabled ? SIGN : SIGN_DISABLED);
+    }
+
+    /** The test key: the mod's green action button, its ▶ white with the font's shadow; flat and grey out of use. */
+    private void testButton(DrawContext context, boolean enabled, @Nullable Control hovered) {
+        Control control = control("test");
+        int x = left + control.x(), y = top + control.y();
+        if (!enabled) {
+            face(context, x, y, control.w(), control.h(), DISABLED, false, false, true);
+            ButtonIcons.draw(context, ButtonIcons.Icon.PLAY, x, y, control.w(), control.h(), SIGN_DISABLED);
+            return;
+        }
+        PartyGui.Theme theme = hovered == control ? PartyGui.BUTTON_PRIMARY.brighter() : PartyGui.BUTTON_PRIMARY;
+        PartyGui.button(context, x, y, control.w(), control.h(), new PartyGui.Theme(OUTLINE, theme.highlight(), theme.body(), theme.shadow()),
+                control.id().equals(held));
+        ButtonIcons.draw(context, ButtonIcons.Icon.PLAY, x, y, control.w(), control.h(), 0xFFFFFFFF, true);
     }
 
     /**
