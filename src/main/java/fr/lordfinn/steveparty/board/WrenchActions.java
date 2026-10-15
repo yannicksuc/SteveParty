@@ -11,7 +11,6 @@ import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainerBlockE
 import fr.lordfinn.steveparty.particles.MagicShapeEffect;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.items.custom.cartridges.CartridgeItem;
-import fr.lordfinn.steveparty.podium.Podiums;
 import fr.lordfinn.steveparty.sounds.ModSounds;
 import fr.lordfinn.steveparty.utils.ServerMemory;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
@@ -48,8 +47,9 @@ import java.util.UUID;
  * <ul>
  *     <li>The Wrench (« Clé ») opens and works what is otherwise locked: a right click on a board space or a router
  *     opens its interface (no sneaking), or, with another kind of cartridge in the off hand, swaps its cartridge (links
- *     kept); on the Party Controller it opens its screen; sneaking on a podium resets its group. It takes plastic apart
- *     in one hit. The blocks only it edits say so to an empty hand ({@link #needsWrench}).</li>
+ *     kept); on the Party Controller it opens its screen. Sneaking, it copies and pastes settings
+ *     ({@link fr.lordfinn.steveparty.board.copy.WrenchCopy}). It takes plastic apart in one hit. The blocks only it
+ *     edits say so to an empty hand ({@link #needsWrench}).</li>
  *     <li>The link edits shared by the tools (the Tile Linker Brush paints the links, see {@link TileLinkerBrush}):
  *     adding / removing a link, the undo history ({@link #recorded}), the cartridge supplied to a tile.</li>
  *     <li>What the brush's anchor (the last board space it painted) gives: a chest clicked joins its inventory tile, a
@@ -75,12 +75,8 @@ public final class WrenchActions {
 
     /** Right click on a block with the Wrench. */
     public static ActionResult useOnBlock(ServerPlayerEntity player, ItemStack wrench, ServerWorld world, BlockPos clicked) {
-        // A podium (sneaking: a plain click is the podium's, it changes what a signal does): its group is reset
-        if (PodiumBlock.isPodium(world.getBlockState(clicked))) {
-            if (player.isSneaking() && !isRepeat(player, clicked, world.getTime()))
-                Podiums.wrenchReset(player, world, clicked);
-            return ActionResult.SUCCESS;
-        }
+        // A podium: a plain click is the podium's (it changes what a signal does), sneaking copies (see WrenchCopy)
+        if (PodiumBlock.isPodium(world.getBlockState(clicked))) return ActionResult.SUCCESS;
         BlockPos pos = BoardSpaces.resolve(world, clicked);
         BlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof PartyController) {
@@ -187,7 +183,8 @@ public final class WrenchActions {
         return BrushAim.aimed(player, world, 1f);
     }
 
-    private static boolean isRepeat(ServerPlayerEntity player, BlockPos pos, long tick) {
+    /** Whether this use is the held button repeating on the same block, not a new click. */
+    public static boolean isRepeat(ServerPlayerEntity player, BlockPos pos, long tick) {
         LastUse last = LAST_USES.put(player.getUuid(), new LastUse(pos, tick));
         return last != null && last.pos().equals(pos) && tick - last.tick() <= REPEAT_TICKS && tick >= last.tick();
     }

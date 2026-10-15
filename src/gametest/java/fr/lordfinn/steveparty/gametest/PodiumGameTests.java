@@ -26,7 +26,6 @@ import fr.lordfinn.steveparty.blocks.custom.PodiumBlock;
 import fr.lordfinn.steveparty.blocks.custom.PodiumBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.StepControllerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
-import fr.lordfinn.steveparty.board.WrenchActions;
 import fr.lordfinn.steveparty.commands.PodiumCommand;
 import fr.lordfinn.steveparty.components.TileStampComponent;
 import fr.lordfinn.steveparty.items.ModItems;
@@ -855,8 +854,8 @@ public class PodiumGameTests implements SteveGameTest {
     // ------------------------------------------------------------------ resets
 
     /**
-     * The reset of a group empties its columns and puts its goal pole bases back to 0: with the Wrench (sneak + right
-     * click), with the command, with a signal of 15 into the base. The coins are not touched.
+     * The reset of a group empties its columns and puts its goal pole bases back to 0: with the command, with a signal
+     * of 15 into the base. The coins are not touched.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void resetsEmptyThePodiumsAndTheirCounters(TestContext context) {
@@ -875,20 +874,6 @@ public class PodiumGameTests implements SteveGameTest {
                 context.assertTrue(occupant(context, first) == null && occupant(context, second) == null, "the columns are emptied");
                 context.assertEquals(base.getTotal(), 0L, "the linked base is back to 0");
             };
-
-            // The Wrench: sneak + right click
-            fill.run();
-            player.setSneaking(true);
-            WrenchActions.useOnBlock(player, new ItemStack(ModItems.WRENCH), world, context.getAbsolutePos(second));
-            assertReset.run();
-            player.setSneaking(false);
-
-            // Adventure: the Wrench resets nothing
-            fill.run();
-            player.changeGameMode(GameMode.ADVENTURE);
-            Podiums.wrenchReset(player, world, context.getAbsolutePos(first));
-            context.assertTrue(occupant(context, first) != null, "not allowed to reset");
-            player.changeGameMode(GameMode.CREATIVE);
 
             // The command, run next to the podiums
             int columns = PodiumCommand.reset(world.getServer().getCommandSource().withWorld(world)

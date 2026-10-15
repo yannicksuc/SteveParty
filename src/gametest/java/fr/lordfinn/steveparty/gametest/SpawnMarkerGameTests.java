@@ -237,20 +237,22 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         MarkerResidents.update(context.getWorld().getServer());
         MobEntity resident = MarkerResidents.resident(context.getWorld(), marker);
         context.assertTrue(resident != null && facing(resident.getYaw(), 225), "its mob faces north-east");
-        // an empty hand does nothing; sneaking, the Wrench (its tool) turns it a sixteenth clockwise; its mob turns with it
+        // an empty hand does nothing; its menu (the Wrench) turns it a sixteenth clockwise; its mob turns with it
         ServerPlayerEntity turner = player(context);
+        turner.refreshPositionAndAngles(marker.getX() + 0.5, marker.getY(), marker.getZ() + 2.5, 0, 0);
         turner.setSneaking(true);
         BlockHitResult hit = new BlockHitResult(Vec3d.ofBottomCenter(marker), Direction.UP, marker, false);
         context.getWorld().getBlockState(marker).onUse(context.getWorld(), turner, hit);
         context.assertTrue(context.getWorld().getBlockState(marker).get(SpawnMarkerBlock.ROTATION) == 10, "an empty hand: nothing");
-        Runnable wrench = () -> SpawnMarkerBlock.wrench(context.getWorld().getBlockState(marker), context.getWorld(), marker, turner);
-        wrench.run();
+        Runnable turn = () -> SpawnMarkerSettings.apply(turner, new SpawnMarkerSettings(marker, entity.isResident(), entity.getLiftSteps(),
+                context.getWorld().getBlockState(marker).get(SpawnMarkerBlock.ROTATION) + 1));
+        turn.run();
         BlockState turned = context.getWorld().getBlockState(marker);
         context.assertTrue(turned.get(SpawnMarkerBlock.ROTATION) == 11 && SpawnMarkerBlock.yaw(turned) == 247.5f
                 && SpawnMarkerBlock.compass(11).equals("ene"), "turned 22.5° clockwise: east-north-east");
         MobEntity again = MarkerResidents.resident(context.getWorld(), marker);
         context.assertTrue(again != null && facing(again.getYaw(), 247.5f), "its mob turned with it");
-        for (int i = 0; i < 15; i++) wrench.run();
+        for (int i = 0; i < 15; i++) turn.run();
         context.assertTrue(context.getWorld().getBlockState(marker).get(SpawnMarkerBlock.ROTATION) == 10, "16 turns: a whole turn, north-east again");
         context.complete();
     }
@@ -359,9 +361,9 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         context.assertTrue(!none.onMarker() && none.yaw() == 90, "no marker: the default");
         // its menu: from close enough, clamped
         withMenu(context, player -> {
-            context.assertTrue(SpawnMarkerSettings.apply(player, new SpawnMarkerSettings(marker, true, 99)), "applied");
+            context.assertTrue(SpawnMarkerSettings.apply(player, new SpawnMarkerSettings(marker, true, 99, SpawnMarkerBlock.rotation(Direction.NORTH))), "applied");
             context.assertEquals(entity.getLiftSteps(), SpawnMarkerBlockEntity.MAX_LIFT, "clamped to +8 blocks");
-            context.assertTrue(SpawnMarkerSettings.apply(player, new SpawnMarkerSettings(marker, true, 6)), "applied");
+            context.assertTrue(SpawnMarkerSettings.apply(player, new SpawnMarkerSettings(marker, true, 6, SpawnMarkerBlock.rotation(Direction.NORTH))), "applied");
         });
         context.assertTrue(entity.isResident() && entity.getLift() == 3, "always visible, 3 blocks up");
         BoardMobSpots.Spot spot = BoardMobSpots.spot(context.getWorld(), tile.getPos(), Vec3d.ZERO, 0);
@@ -395,7 +397,7 @@ public class SpawnMarkerGameTests implements SteveGameTest {
         ServerPlayerEntity far = player(context);
         Vec3d away = context.getAbsolute(new Vec3d(5.5, 1, 30));
         far.refreshPositionAndAngles(away.x, away.y, away.z, 0, 0);
-        context.assertTrue(!SpawnMarkerSettings.apply(far, new SpawnMarkerSettings(context.getAbsolutePos(MARKER), false, 0)), "too far: refused");
+        context.assertTrue(!SpawnMarkerSettings.apply(far, new SpawnMarkerSettings(context.getAbsolutePos(MARKER), false, 0, 0)), "too far: refused");
     }
 
     // ---------------------------------------------------------------- the brush's settings never undo a mob space

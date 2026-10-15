@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.blocks.custom.villager.VillagerBlockEvents;
 import fr.lordfinn.steveparty.board.ExplorerHelmet;
 import fr.lordfinn.steveparty.board.TileLinkerBrush;
 import fr.lordfinn.steveparty.board.WrenchActions;
+import fr.lordfinn.steveparty.board.copy.WrenchCopy;
 import fr.lordfinn.steveparty.commands.BoardCommands;
 import fr.lordfinn.steveparty.commands.LinksCommand;
 import fr.lordfinn.steveparty.commands.MiniGamePageCommand;
@@ -204,6 +205,7 @@ public class Steveparty implements ModInitializer {
         PodiumCommand.initialize();
         LinksCommand.initialize();
         WrenchActions.initialize();
+        WrenchCopy.initialize();
         TileLinkerBrush.initialize();
         fr.lordfinn.steveparty.board.LinkerGhosts.initialize();
         new TokenMovementService();
