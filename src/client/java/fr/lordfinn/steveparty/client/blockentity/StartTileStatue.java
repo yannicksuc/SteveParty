@@ -48,7 +48,7 @@ final class StartTileStatue {
      * The statue's height (blocks, on a standard tile): a small figurine, the pawn standing in the middle of the tile
      * stays the star; on the pedestal it keeps clear of the pawn.
      */
-    private static final float STATUE_HEIGHT = 0.55f;
+    private static final float STATUE_HEIGHT = 1.1f;
     private static final float STATUE_SCALE = STATUE_HEIGHT * 16f / PlayerStatue.HEIGHT_PIXELS;
     /** Where the statue sits, toward the front from the tile's middle (blocks): the pedestal's middle. */
     private static final float STATUE_FORWARD = 9f / 16;
