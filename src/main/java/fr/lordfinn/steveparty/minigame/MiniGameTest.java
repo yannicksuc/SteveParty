@@ -2,6 +2,8 @@ package fr.lordfinn.steveparty.minigame;
 
 import fr.lordfinn.steveparty.advancement.ModCriteria;
 import fr.lordfinn.steveparty.Steveparty;
+import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
+import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.MiniGameGains;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyControllerEntity;
@@ -75,6 +77,9 @@ import static fr.lordfinn.steveparty.utils.SoundsUtils.playSoundToPlayers;
  * </ul>
  * One test per page, and nobody in two mini-games at once. A party drawing a page under test stops the test first.
  * Nothing is saved: a server stopping brings the players back.
+ * <p>
+ * The Party Antennas linked to the mini-game hear its run: launched (practice round), the players sent out (mini-game
+ * start, at each replay too), the results (mini-game end): see {@link PartyBellBlockEntity#ringMiniGameRun}.
  */
 public final class MiniGameTest implements MiniGameSession {
     public static final double RECRUIT_RADIUS = 10;
@@ -478,6 +483,8 @@ public final class MiniGameTest implements MiniGameSession {
             // Those taken in it can leave it from the chat
             player.sendMessage(returns.containsKey(player.getUuid()) ? start.copy().append("\n").append(leaveButton()) : start, false);
         }
+        // The antennas linked to this mini-game: a run launched (its « practice »)
+        PartyBellBlockEntity.ringMiniGameRun(pageId, PartyMoment.PRACTICE_ROUND, players.size());
         countdown(countdownSeconds);
     }
 
@@ -542,6 +549,7 @@ public final class MiniGameTest implements MiniGameSession {
             return;
         }
         phase = Phase.PLAYING;
+        PartyBellBlockEntity.ringMiniGameRun(pageId, PartyMoment.MINIGAME_START, players.size());
         // Everyone out at once (those who share a pipe too), the players standing still for the countdown
         List<ServerPlayerEntity> out = new ArrayList<>();
         pipes.forEach((uuid, link) -> {
@@ -616,6 +624,7 @@ public final class MiniGameTest implements MiniGameSession {
                     return player != null ? player.getGameProfile().getName() : uuid.toString().substring(0, 8);
                 }).asTest();
         places.forEach((uuid, place) -> ModCriteria.fire(server, uuid, "minigame_test", place, null));
+        PartyBellBlockEntity.ringMiniGameRun(pageId, PartyMoment.MINIGAME_END, (int) places.values().stream().filter(place -> place == 1).count());
         // The results are read: the round is over, inventories and zone are given back
         arena.end();
         send(new MiniGamePagePayloads.Results(results));

@@ -460,7 +460,7 @@
   "book.steveparty.guide.party.bell.page0.title": "Party Antenna",
   "book.steveparty.guide.party.bell.page1.text": "- [#](9A6A00)**Party**[#](): start, final rounds, end, rewind\n- [#](1C7FA0)**Rounds and turns**[#](): round, turn, die, fork, path, landing\n- [#](267C3E)**Coins and stars**[#](): coins, Party Stars, leader\n- [#](7B2AA0)**Events**[#](): event, its end\n- [#](C0601A)**Mini-games**[#](): chosen, practice, start, end\n\nComparator: a related number.",
   "book.steveparty.guide.party.bell.page1.title": "Frequencies",
-  "book.steveparty.guide.party.bell.page3.text": "[#](1C4E80)**Filter**[#](): rings only for some values (= 5, ≥ 3...).\n\n[#](1C4E80)**Wait**[#](): the party pauses until every waiting antenna gets redstone; a Party Rewinder's Next goes on.",
+  "book.steveparty.guide.party.bell.page3.text": "[#](1C4E80)**Filter**[#](): rings only for some values (= 5, ≥ 3...).\n\n[#](1C4E80)**Wait**[#](): the party pauses until every waiting antenna gets redstone; a Party Rewinder's Next goes on.\n\n[#](1C4E80)**Out of a party**[#](): through its link only, the dice and moves of free tokens on its board, or the runs of its mini-game; never waits.",
   "book.steveparty.guide.party.bell.page3.title": "Filter and wait",
   "book.steveparty.guide.party.bell.page2.text": "Parachute as the dish, redstone torch as the receiver, lightning rod as the mast.",
   "book.steveparty.guide.party.cards.description": "Write your own program",

@@ -460,7 +460,7 @@
   "book.steveparty.guide.party.bell.page0.title": "Antenne de Party",
   "book.steveparty.guide.party.bell.page1.text": "- [#](9A6A00)**Partie**[#]() : début, dernières manches, fin, Magnéto\n- [#](1C7FA0)**Manches et tours**[#]() : manche, tour, dé, carrefour, chemin, case\n- [#](267C3E)**Pièces et étoiles**[#]() : pièces, Party Stars, leader\n- [#](7B2AA0)**Évènements**[#]() : évènement, sa fin\n- [#](C0601A)**Mini-jeux**[#]() : tiré, chauffe, départ, fin\n\nComparateur : un nombre lié.",
   "book.steveparty.guide.party.bell.page1.title": "Fréquences",
-  "book.steveparty.guide.party.bell.page3.text": "[#](1C4E80)**Filtre**[#]() : ne sonne que pour certaines valeurs (= 5, ≥ 3...).\n\n[#](1C4E80)**Attente**[#]() : la partie s'arrête jusqu'à ce que chaque antenne en attente reçoive de la redstone ; le Suivant d'un Magnéto de Party passe outre.",
+  "book.steveparty.guide.party.bell.page3.text": "[#](1C4E80)**Filtre**[#]() : ne sonne que pour certaines valeurs (= 5, ≥ 3...).\n\n[#](1C4E80)**Attente**[#]() : la partie s'arrête jusqu'à ce que chaque antenne en attente reçoive de la redstone ; le Suivant d'un Magnéto de Party passe outre.\n\n[#](1C4E80)**Hors partie**[#]() : par son lien seulement, les dés et déplacements des pions libres sur son plateau, ou les parties de son mini-jeu ; jamais d'attente.",
   "book.steveparty.guide.party.bell.page3.title": "Filtre et attente",
   "book.steveparty.guide.party.bell.page2.text": "Parachute en parabole, torche de redstone en récepteur, paratonnerre en mât.",
   "book.steveparty.guide.party.cards.description": "Écrire son programme",
