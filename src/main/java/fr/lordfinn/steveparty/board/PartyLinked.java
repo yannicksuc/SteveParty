@@ -13,8 +13,8 @@ package fr.lordfinn.steveparty.board;
  *     {@code SyncedBlockEntity} sends its data to the clients) returned by {@link #partyLink()};</li>
  *     <li>calling {@link PartyLink#write} / {@link PartyLink#read} from its {@code writeNbt} / {@code readNbt} (the
  *     data has to reach the clients too: the brush draws the link from there);</li>
- *     <li>finding its party with {@link PartyLink#runningParty} (or {@link PartyLink#party}), with its own fallback when
- *     unlinked if it has one;</li>
+ *     <li>finding its party with {@link PartyLink#runningParty} (or {@link PartyLink#party}) only: unlinked, it serves
+ *     no party (never the nearest one around) and shows it;</li>
  *     <li>letting the brush's use through: its block's {@code onUse} returns {@code PASS} when
  *     {@code TileLinkerBrush.isBrush(player.getMainHandStack())}.</li>
  * </ol>

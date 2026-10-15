@@ -19,6 +19,9 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
+import net.minecraft.server.world.ServerWorld;
+import fr.lordfinn.steveparty.board.PartyLinked;
+import java.util.Optional;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -170,8 +173,20 @@ public final class CartridgeContainers {
     public static PartyResources sourceFor(ItemStack stack, World world, @Nullable BlockPos space) {
         if (!isEmpty(stack) || space == null) return PartyResources.of(available(stack, world));
         if (world.isClient) return PartyResources.NONE;
-        return PartyResources.of(PartyControllerEntity.getPartyOfBoardSpace(world, space,
-                PartyControllerEntity.BOARD_NEARBY_RADIUS, false).orElse(null));
+        return PartyResources.of(controllerOf(world, space, PartyControllerEntity.BOARD_NEARBY_RADIUS)
+                .filter(controller -> controller.getPartyData().isStarted()).orElse(null));
+    }
+
+    /**
+     * The Party Controller of the block holding a cartridge at {@code holder}, its party running or not: for a block
+     * linked to its party with the Tile Linker Brush (a Piggy Bank, {@link PartyLinked}), the party of that link only
+     * (none unlinked); else the controller of its board ({@link PartyControllerEntity#getControllerOfBoardSpace}).
+     */
+    private static Optional<PartyControllerEntity> controllerOf(World world, BlockPos holder, int fallbackRadius) {
+        if (world instanceof ServerWorld serverWorld && world.getBlockEntity(holder) instanceof PartyLinked linked) {
+            return Optional.ofNullable(linked.partyLink().linked(serverWorld, false).playingParty());
+        }
+        return PartyControllerEntity.getControllerOfBoardSpace(world, holder, fallbackRadius);
     }
 
     /**
@@ -190,7 +205,7 @@ public final class CartridgeContainers {
      */
     public static @Nullable PartyControllerEntity partyBankOf(ItemStack stack, World world, BlockPos space) {
         if (!isEmpty(stack) || world.isClient) return null;
-        return PartyControllerEntity.getControllerOfBoardSpace(world, space, PartyControllerEntity.BOARD_NEARBY_RADIUS).orElse(null);
+        return controllerOf(world, space, PartyControllerEntity.BOARD_NEARBY_RADIUS).orElse(null);
     }
 
     /**
@@ -218,7 +233,7 @@ public final class CartridgeContainers {
     public static Storage storageOf(ItemStack stack, World world, @Nullable BlockPos holder, int fallbackRadius) {
         if (!isEmpty(stack)) return Storage.LINKED;
         if (holder == null || world.isClient) return Storage.NONE;
-        return PartyControllerEntity.getControllerOfBoardSpace(world, holder, fallbackRadius).isPresent()
+        return controllerOf(world, holder, fallbackRadius).isPresent()
                 ? Storage.PARTY_CONTROLLER : Storage.NONE;
     }
 

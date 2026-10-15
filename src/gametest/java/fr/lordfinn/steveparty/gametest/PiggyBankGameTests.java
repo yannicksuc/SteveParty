@@ -28,6 +28,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.ChestBlockEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -42,8 +43,9 @@ import java.util.UUID;
 
 /**
  * The Piggy Bank on the party flow: who each target pays (player of the turn, at a turn end or start too; last
- * winners; everyone; nearest), from its linked chest or, none linked, the party's bank; its menu sets its target.
- * Each test in a batch of its own: the bank pays the closest running party within 64 blocks.
+ * winners; everyone; nearest), from its linked chest or, none linked, the party's bank; its menu sets its target. Its
+ * party is the one of what it is linked to with the brush only: unlinked it does nothing; an old one links itself once
+ * to the nearest controller. Each test in a batch of its own (an old bank links itself to the nearest controller).
  */
 public class PiggyBankGameTests implements SteveGameTest {
     private static final BlockPos CONTROLLER = new BlockPos(1, 1, 1), BANK = new BlockPos(4, 1, 4), CHEST = new BlockPos(4, 1, 7);
@@ -67,7 +69,13 @@ public class PiggyBankGameTests implements SteveGameTest {
         cartridge.set(ModComponents.SELECTION_STATE, InventoryCartridgeItem.ALL);
         bank.setStack(0, cartridge);
         bank.setTarget(target);
+        link(context, bank, CONTROLLER);
         return bank;
+    }
+
+    /** Links {@code bank} with the brush to the element at {@code element} (relative). */
+    private static void link(TestContext context, PiggyBankBlockEntity bank, BlockPos element) {
+        bank.partyLink().set(GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(element)));
     }
 
     private static ServerPlayerEntity player(TestContext context, String name, double x, double z) {
@@ -264,6 +272,7 @@ public class PiggyBankGameTests implements SteveGameTest {
         context.setBlockState(BANK, ModBlocks.PIGGY_BANK);
         PiggyBankBlockEntity bank = context.getBlockEntity(BANK);
         bank.setTarget(Target.EVERYONE);
+        link(context, bank, CONTROLLER);
         PartyControllerEntity controller = placeController(context);
         controller.setInfiniteBank(false);
         ChestBlockEntity bankChest = TestBank.stock(context, controller, new BlockPos(1, 1, 7), 10, 0);
@@ -280,6 +289,85 @@ public class PiggyBankGameTests implements SteveGameTest {
         context.assertEquals(CartridgeTransfers.countMatching(coin, b.getInventory()), 3, "B got 3 coins");
         context.assertEquals(CartridgeTransfers.countMatching(coin, bankChest), 4, "6 coins out of the bank");
         end(context);
+    }
+
+    // ---------------------------------------------------------------- its link
+
+    /** Unlinked, a party running next to it: nobody paid, nothing out of the chest, its comparator off. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "piggy_unlinked")
+    public void unlinkedItDoesNothing(TestContext context) {
+        TestPlayers.alone(context, new Vec3d(4, 1, 4), 16);
+        ServerPlayerEntity a = player(context, "A", 2.5, 4.5), b = player(context, "B", 6.5, 4.5);
+        PartyControllerEntity controller = placeController(context);
+        controller.setPartyData(twoTurns(UUID.randomUUID(), a.getUuid(), UUID.randomUUID(), b.getUuid()));
+        controller.nextStep();
+        PiggyBankBlockEntity bank = placeBank(context, Target.EVERYONE, 10);
+        bank.partyLink().set(null);
+        context.assertTrue(!bank.isLinked(), "unlinked");
+        context.assertTrue(!bank.activate(), "a pulse does nothing");
+        context.assertEquals(nuggets(a) + nuggets(b), 0, "nobody paid");
+        ChestBlockEntity chest = context.getBlockEntity(CHEST);
+        context.assertEquals(CartridgeTransfers.countMatching(new ItemStack(Items.GOLD_NUGGET), chest), 10, "the chest untouched");
+        context.assertEquals(comparator(context), 0, "its comparator off");
+        ServerPlayerEntity viewer = TestPlayers.mock(context);
+        PiggyBankScreenHandler menu = (PiggyBankScreenHandler) bank.createMenu(0, viewer.getInventory(), viewer);
+        context.assertTrue(menu != null && !menu.isLinked(), "its menu shows it unlinked");
+        end(context);
+    }
+
+    /** Linked to a tile of the board, it pays the party of that board. */
+    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "piggy_through_tile")
+    public void linkedThroughATileItPaysThatParty(TestContext context) {
+        TestPlayers.alone(context, new Vec3d(4, 1, 4), 16);
+        ServerPlayerEntity a = player(context, "A", 2.5, 4.5), b = player(context, "B", 6.5, 4.5);
+        PartyControllerEntity controller = placeController(context);
+        BlockPos tile = new BlockPos(7, 1, 1);
+        context.setBlockState(tile.down(), Blocks.STONE);
+        context.setBlockState(tile, ModBlocks.TILE);
+        PiggyBankBlockEntity bank = placeBank(context, Target.EVERYONE, 10);
+        link(context, bank, tile);
+        controller.setPartyData(twoTurns(UUID.randomUUID(), a.getUuid(), UUID.randomUUID(), b.getUuid()));
+        controller.nextStep();
+        context.assertTrue(bank.activate(), "paid");
+        context.assertEquals(nuggets(a), 1, "A paid");
+        context.assertEquals(nuggets(b), 1, "B paid");
+        context.assertEquals(comparator(context), 15, "its comparator on");
+        end(context);
+    }
+
+    /**
+     * Saved before it had to be linked: it links itself to the nearest Party Controller (a running party's first, as
+     * it found it alone before), once;
+     * unlinked again, or saved and loaded again, it never links itself any more. A new one never does.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "piggy_migration")
+    public void anOldBankLinksItselfOnceToTheNearestController(TestContext context) {
+        BlockPos far = new BlockPos(8, 1, 8);
+        PartyControllerEntity near = placeController(context);
+        near.setPartyData(twoTurns(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()));
+        near.nextStep();
+        context.setBlockState(far.down(), Blocks.STONE);
+        context.setBlockState(far, ModBlocks.PARTY_CONTROLLER);
+        TestCleanup.atEnd(context, () -> context.removeBlock(far));
+        context.setBlockState(BANK.add(1, 0, 0), ModBlocks.PIGGY_BANK);
+        PiggyBankBlockEntity fresh = context.getBlockEntity(BANK.add(1, 0, 0));
+        context.setBlockState(BANK, ModBlocks.PIGGY_BANK);
+        PiggyBankBlockEntity bank = context.getBlockEntity(BANK);
+        var registries = context.getWorld().getRegistryManager();
+        // As saved before: no link, none of its link keys
+        bank.readNbt(new NbtCompound(), registries);
+        GlobalPos nearest = GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(CONTROLLER));
+        context.waitAndRun(45, () -> {
+            context.assertEquals(bank.partyLink().get(), nearest, "linked to the nearest controller");
+            context.assertTrue(!fresh.isLinked(), "a new one stays unlinked");
+            bank.partyLink().set(null);
+            NbtCompound saved = bank.createNbt(registries);
+            bank.readNbt(saved, registries);
+            context.waitAndRun(45, () -> {
+                context.assertTrue(!bank.isLinked(), "never links itself again");
+                end(context);
+            });
+        });
     }
 
     /** Its menu's buttons set its target. */

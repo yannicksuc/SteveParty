@@ -38,7 +38,7 @@ public class PiggyBankScreenHandler extends CartridgeContainerScreenHandler {
         this.inventory = blockInventory;
         this.properties = properties;
         checkSize(blockInventory, 1);
-        checkDataCount(properties, 1);
+        checkDataCount(properties, 2);
         addProperties(properties);
         init(playerInventory, 54);
         addCartridgeMenu(playerInventory.player, pos);
@@ -46,7 +46,7 @@ public class PiggyBankScreenHandler extends CartridgeContainerScreenHandler {
 
     /** Client side: the slot's copy, the bank's position from the opening data. */
     public PiggyBankScreenHandler(int syncId, PlayerInventory playerInventory, BlockPosPayload payload) {
-        this(syncId, playerInventory, new SimpleInventory(1), new ArrayPropertyDelegate(1), payload.pos());
+        this(syncId, playerInventory, new SimpleInventory(1), new ArrayPropertyDelegate(2), payload.pos());
     }
 
     @Override
@@ -61,6 +61,11 @@ public class PiggyBankScreenHandler extends CartridgeContainerScreenHandler {
 
     public PiggyBankBlockEntity.Target getTarget() {
         return PiggyBankBlockEntity.Target.byId(properties.get(0));
+    }
+
+    /** Whether the Piggy Bank is linked to a party element (unlinked, it does nothing: its menu shows it). */
+    public boolean isLinked() {
+        return properties.get(1) != 0;
     }
 
     @Override

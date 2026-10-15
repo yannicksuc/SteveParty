@@ -2,11 +2,13 @@ package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.PiggyBankBlockEntity;
+import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.FloatingInfo;
 import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.components.InventoryComponent;
+import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -17,6 +19,8 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
@@ -28,6 +32,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +43,8 @@ import static fr.lordfinn.steveparty.components.ModComponents.INVENTORY_COMPONEN
  * What the Piggy Bank looked at does, as a board space's panel ({@link TilePanel}): a small gold plate over it, its
  * target's icon (the dice: the player of the turn, the gold podium: the winners, the party: everyone, the compass: the
  * nearest), then each item of its cartridge with what it moves, green « +5 » given, red « -20 » taken; a « / » between
- * them when one of them only moves at a time (random or in turn). No words. Out of sight, its card on the screen
+ * them when one of them only moves at a time (random or in turn). Linked to no party (it does nothing then), the
+ * Tile Linker Brush crossed out in red comes first. No words. Out of sight, its card on the screen
  * ({@link FloatingInfo}).
  */
 public final class PiggyBankInfoClient {
@@ -51,13 +57,23 @@ public final class PiggyBankInfoClient {
     private static final int GIVE = 0xFF1E7A1E, TAKE = 0xFFB3202A, SOFT = 0xFF8A6A1A;
     private static final int LIGHT = LightmapTextureManager.MAX_LIGHT_COORDINATE;
 
-    /** An item and what moves of it (text empty: the target). */
-    private record Cell(ItemStack icon, String text, int color) {
+    /** An item and what moves of it (text empty: the target); {@code crossed}: crossed out in red (linked to nothing). */
+    private record Cell(ItemStack icon, String text, int color, boolean crossed) {
+        Cell(ItemStack icon, String text, int color) {
+            this(icon, text, color, false);
+        }
     }
 
-    /** The cells, and whether one item only moves at a time (a « / » between them). */
-    private record Shown(List<Cell> cells, boolean oneOf) {
+    /**
+     * The cells, whether one item only moves at a time (a « / » between them), and how many cells come before the
+     * items (a divider after each): the target, after the crossed brush when unlinked.
+     */
+    private record Shown(List<Cell> cells, boolean oneOf, int heads) {
     }
+
+    private static final ItemStack BRUSH = new ItemStack(ModItems.TILE_LINKER_BRUSH);
+    /** A pixel of the red cross on a panel's icon, and the whole cross (text pixels: an icon is {@link #ICON}). */
+    private static final float CROSS_PIXEL = 0.7f, CROSS = CROSS_PIXEL * 7;
 
     private record CardKey(BlockPos pos) {
     }
@@ -83,7 +99,9 @@ public final class PiggyBankInfoClient {
     private static @Nullable Shown shown(MinecraftClient client, BlockPos pos) {
         if (client.world == null || !(client.world.getBlockEntity(pos) instanceof PiggyBankBlockEntity bank)) return null;
         List<Cell> cells = new ArrayList<>();
+        if (!bank.isLinked()) cells.add(new Cell(BRUSH, "", 0, true));
         cells.add(new Cell(bank.getTarget().getIcon(), "", 0));
+        int heads = cells.size();
         ItemStack cartridge = bank.getStack(0);
         InventoryComponent content = cartridge.getOrDefault(INVENTORY_COMPONENT, null);
         if (content != null) {
@@ -93,8 +111,8 @@ public final class PiggyBankInfoClient {
                 cells.add(new Cell(CartridgeTransfers.pattern(stack), (taken ? "-" : "+") + stack.getCount(), taken ? TAKE : GIVE));
             }
         }
-        boolean oneOf = cells.size() > 2 && InventoryCartridgeItem.getSelectionState(cartridge) != InventoryCartridgeItem.ALL;
-        return new Shown(cells, oneOf);
+        boolean oneOf = cells.size() > heads + 1 && InventoryCartridgeItem.getSelectionState(cartridge) != InventoryCartridgeItem.ALL;
+        return new Shown(cells, oneOf, heads);
     }
 
     private static int cellWidth(TextRenderer font, Cell cell) {
@@ -103,7 +121,7 @@ public final class PiggyBankInfoClient {
 
     /** Text pixels from a cell to the next: the divider after the target, a « / » between one-of items. */
     private static int gap(TextRenderer font, Shown shown, int index) {
-        if (index == 0) return CELL_GAP + DIVIDER + CELL_GAP;
+        if (index < shown.heads()) return CELL_GAP + DIVIDER + CELL_GAP;
         return shown.oneOf() ? CELL_GAP / 2 + font.getWidth("/") + CELL_GAP / 2 : CELL_GAP;
     }
 
@@ -153,13 +171,15 @@ public final class PiggyBankInfoClient {
             client.getItemRenderer().renderItem(cell.icon(), ModelTransformationMode.GUI, LIGHT, OverlayTexture.DEFAULT_UV, matrices,
                     consumers, client.world, 0);
             matrices.pop();
+            // On the icon's bottom-right corner (the icon spans y - 1 to y + 8)
+            if (cell.crossed()) cross(matrices, consumers, x + ICON + 1 - CROSS, y + 9 - CROSS);
             if (!cell.text().isEmpty()) {
                 font.draw(cell.text(), x + ICON + ICON_GAP, y, cell.color(), false, matrices.peek().getPositionMatrix(),
                         consumers, TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
             }
             x += cellWidth(font, cell);
             if (i + 1 < shown.cells().size()) {
-                if (i == 0) {
+                if (i < shown.heads()) {
                     WorldDraw.fill(matrices, consumers, x + CELL_GAP, y - 1, x + CELL_GAP + DIVIDER, y + 8, -0.25f, SOFT);
                 } else if (shown.oneOf()) {
                     font.draw("/", x + CELL_GAP / 2f, y, SOFT, false, matrices.peek().getPositionMatrix(),
@@ -171,6 +191,33 @@ public final class PiggyBankInfoClient {
         consumers.draw();
         matrices.pop();
     }
+
+    /**
+     * The red cross ({@link ConsolePaint#NOT_LINKED}) with its top-left corner at (x, y) (text pixels), in front of the
+     * icon under it: opaque pixels, one batch drawn at once.
+     */
+    private static void cross(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, float x, float y) {
+        float pixel = CROSS_PIXEL;
+        RenderLayer layer = RenderLayer.getTextBackground();
+        VertexConsumer consumer = consumers.getBuffer(layer);
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
+        String[] rows = ConsolePaint.NOT_LINKED;
+        for (int row = 0; row < rows.length; row++) {
+            for (int column = 0; column < rows[row].length(); column++) {
+                Integer argb = ConsolePaint.NOT_LINKED_COLOURS.get(rows[row].charAt(column));
+                if (argb == null) continue;
+                float x0 = x + column * pixel, y0 = y + row * pixel;
+                consumer.vertex(matrix, x0, y0, CROSS_Z).color(argb).light(LIGHT);
+                consumer.vertex(matrix, x0, y0 + pixel, CROSS_Z).color(argb).light(LIGHT);
+                consumer.vertex(matrix, x0 + pixel, y0 + pixel, CROSS_Z).color(argb).light(LIGHT);
+                consumer.vertex(matrix, x0 + pixel, y0, CROSS_Z).color(argb).light(LIGHT);
+            }
+        }
+        consumers.draw(layer);
+    }
+
+    /** The cross's depth: in front of the flat icon under it (label space: +z toward the camera). */
+    private static final float CROSS_Z = 1.2f;
 
     // ---------------------------------------------------------------- on the screen
 
@@ -195,6 +242,7 @@ public final class PiggyBankInfoClient {
                 card.getMatrices().translate(ix, y - 1, 0);
                 card.getMatrices().scale(ICON / 16f, ICON / 16f, 1);
                 HudDepth.item(card, () -> card.drawItem(cell.icon(), 0, 0));
+                if (cell.crossed()) HudDepth.onTop(card, () -> ConsolePaint.notLinked(card, 16 - ConsolePaint.NOT_LINKED.length + 1, 16 - ConsolePaint.NOT_LINKED.length + 1));
                 card.getMatrices().pop();
                 if (!cell.text().isEmpty()) {
                     HudDepth.onTop(card, () -> UiText.line(card, font, cell.text(), ix + ICON + ICON_GAP, y, font.getWidth(cell.text()),
@@ -203,7 +251,7 @@ public final class PiggyBankInfoClient {
                 x += cellWidth(font, cell);
                 if (i + 1 < shown.cells().size()) {
                     int sx = x;
-                    if (i == 0) HudDepth.onTop(card, () -> card.fill(sx + CELL_GAP, y - 1, sx + CELL_GAP + DIVIDER, y + 8, SOFT));
+                    if (i < shown.heads()) HudDepth.onTop(card, () -> card.fill(sx + CELL_GAP, y - 1, sx + CELL_GAP + DIVIDER, y + 8, SOFT));
                     else if (shown.oneOf()) HudDepth.onTop(card, () -> UiText.line(card, font, "/", sx + CELL_GAP / 2, y, font.getWidth("/"), SOFT, false));
                     x += gap(font, shown, i);
                 }

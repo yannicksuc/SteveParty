@@ -506,7 +506,7 @@
   "book.steveparty.guide.party.piggy_bank.page0.text": "À chaque impulsion : sa [#](B95D05)**Cartouche Bonus / Malus**[#]() [#](2E7D32)**donne**[#]() ou [#](C0392B)**prend**[#]().",
   "book.steveparty.guide.party.piggy_bank.page0.title": "Tirelire",
   "book.steveparty.guide.party.piggy_bank.page1.text": "[#](9A6A00)Clic droit[#]() : son menu.\n- le joueur du tour\n- les derniers gagnants\n- tous\n- le plus proche",
-  "book.steveparty.guide.party.piggy_bank.page2.text": "Liée au [#](1C4E80)**Pinceau lieur**[#]() à un élément d'une partie (Contrôleur de Party, une case...) : cette partie, même loin.\\\n\\\nSinon : la plus proche à 64 blocs.",
+  "book.steveparty.guide.party.piggy_bank.page2.text": "Liée au [#](1C4E80)**Pinceau lieur**[#]() à un élément d'une partie (Contrôleur de Party, une case...) : cette partie, même loin.\\\n\\\nPas liée : elle ne fait rien, le pinceau barré de rouge au-dessus d'elle.",
   "book.steveparty.guide.party.piggy_bank.page2.title": "Quelle partie",
   "book.steveparty.guide.party.piggy_bank.page1.title": "Qui",
   "book.steveparty.guide.party.powerups.description": "Un coup de pouce pour ton tour",

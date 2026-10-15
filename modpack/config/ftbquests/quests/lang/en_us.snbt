@@ -597,7 +597,7 @@
 	quest.280705EA919A80DA.quest_desc: [
 		"A ceramic pig with an Inventory Cartridge. Each pulse gives (or takes) its items: player of the turn, mini-game winners, everyone or the nearest."
 		"All-or-nothing mode: sell a Party Star for Coins."
-		"Link it to any part of a game with the Tile Linker Brush; otherwise it serves the nearest party (64 blocks)."
+		"Link it to any part of a game with the Tile Linker Brush: it serves that party; not linked, it does nothing (the brush crossed out in red over it)."
 	]
 	quest.280705EA919A80DA.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.280705EA919A80DA.title: "Piggy Bank"

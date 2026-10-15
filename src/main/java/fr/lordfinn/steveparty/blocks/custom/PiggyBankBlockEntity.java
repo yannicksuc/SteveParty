@@ -38,6 +38,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.StringIdentifiable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
@@ -49,19 +50,30 @@ import java.util.UUID;
 
 /**
  * Piggy bank: on each redstone pulse, applies its inventory cartridge to its target (see {@link Target}): its linked
- * containers (none linked: the bank of the party around it, as a board space) give the cartridge items to each target
- * player, and take the items marked negative from them. With the "all items" selection it is all-or-nothing, so it can
- * sell a star for coins. The comparator gives 15 when the last pulse succeeded, 0 otherwise.
+ * containers (none linked: the bank of its party) give the cartridge items to each target player, and take the items
+ * marked negative from them. With the "all items" selection it is all-or-nothing, so it can sell a star for coins. The
+ * comparator gives 15 when the last pulse succeeded, 0 otherwise.
+ * <p>
+ * Its party is the one of the element it is linked to with the Tile Linker Brush, only ({@link PartyLink}); unlinked,
+ * a pulse does nothing (a sad grunt), and its panel and menu show it. Saved before it had to be linked, it links itself
+ * once to the Party Controller nearest to it ({@link #MIGRATION_RANGE}), see {@link #serverTick}.
  * <p>
  * Its target and cartridge go to the clients (the panel over it when looked at); a payout bursts its items out of the
  * slot and over each player paid, with what each one got or paid floating there.
  */
 public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implements ExtendedScreenHandlerFactory<BlockPosPayload>, PartyLinked {
-    /**
-     * The party element it serves, painted with the Tile Linker Brush (see {@link PartyLink}); unlinked, the closest
-     * party within {@link PartyBellBlockEntity#RANGE} blocks.
-     */
+    /** The party element it serves, painted with the Tile Linker Brush (see {@link PartyLink}); unlinked: none. */
     private final PartyLink partyLink = new PartyLink(this, this::syncLink);
+    /**
+     * A Piggy Bank saved before it had to be linked found its party alone, the nearest one this close: it links itself
+     * once to the nearest Party Controller this close, then never again.
+     */
+    public static final int MIGRATION_RANGE = 64;
+    /** How many times (a second apart) an old Piggy Bank looks for a controller to link to before it gives up. */
+    private static final int MIGRATION_TRIES = 10;
+    /** Whether it may still link itself (saved before it had to be linked, not done yet): see {@link #serverTick}. */
+    private boolean migrating = false;
+    private int migrationTries = 0;
 
     @Override
     public PartyLink partyLink() {
@@ -74,10 +86,30 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implemen
         this.world.updateListeners(this.pos, state, state, Block.NOTIFY_LISTENERS);
     }
 
-    /** The party it serves: the one of its link, else the closest one (running, or standing on its end). */
+    /** The party it serves: the one of its link (running, or standing on its end); none unlinked. */
     private Optional<PartyControllerEntity> party(ServerWorld world) {
-        if (partyLink.get() != null) return Optional.ofNullable(partyLink.runningParty(world, true));
-        return PartyControllerEntity.getClosestSteppablePartyControllerEntity(world, this.pos, PartyBellBlockEntity.RANGE, true);
+        return Optional.ofNullable(partyLink.runningParty(world, true));
+    }
+
+    /** Whether it is linked to a party element (the clients know it too: its panel and menu show it unlinked). */
+    public boolean isLinked() {
+        return partyLink.get() != null;
+    }
+
+    /**
+     * Server tick: an old Piggy Bank (saved before it had to be linked) links itself to the Party Controller nearest to
+     * it within {@link #MIGRATION_RANGE} blocks, a running party's first, as soon as one is loaded (a few tries a second
+     * apart, then it stays unlinked). Done once: saved, it never links itself again.
+     */
+    public void serverTick(ServerWorld world) {
+        if (!migrating || world.getTime() % 20 != Math.floorMod(this.pos.asLong(), 20)) return;
+        if (partyLink.get() == null) {
+            Optional<PartyControllerEntity> nearest = PartyControllerEntity.getClosestPartyControllerEntity(world, this.pos, MIGRATION_RANGE);
+            if (nearest.isEmpty() && ++migrationTries < MIGRATION_TRIES) return;
+            nearest.ifPresent(controller -> partyLink.set(GlobalPos.create(world.getRegistryKey(), controller.getPos().toImmutable())));
+        }
+        migrating = false;
+        markDirty();
     }
 
     /** Radius in which the "nearest player" target (and the free play fallbacks) look for players. */
@@ -134,21 +166,21 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implemen
     private boolean lastSucceeded = false;
     private boolean inputPowered = false;
 
-    /** The menu's view of the target (its ordinal), set by its buttons. */
+    /** The menu's view of the target (its ordinal), set by its buttons, and whether it is linked (1) or not (0). */
     private final PropertyDelegate properties = new PropertyDelegate() {
         @Override
         public int get(int index) {
-            return target.ordinal();
+            return index == 0 ? target.ordinal() : isLinked() ? 1 : 0;
         }
 
         @Override
         public void set(int index, int value) {
-            setTarget(Target.byId(value));
+            if (index == 0) setTarget(Target.byId(value));
         }
 
         @Override
         public int size() {
-            return 1;
+            return 2;
         }
     };
 
@@ -200,7 +232,8 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implemen
     public boolean activate() {
         if (!(this.world instanceof ServerWorld serverWorld)) return false;
         boolean succeeded = false;
-        for (ServerPlayerEntity player : findTargets(serverWorld)) {
+        // Unlinked: no party, nobody to pay (the sad grunt below)
+        for (ServerPlayerEntity player : isLinked() ? findTargets(serverWorld) : List.<ServerPlayerEntity>of()) {
             List<Moved> moved = new ArrayList<>();
             boolean paid = CartridgeTransfers.apply(serverWorld, getStack(0), this.pos, player, () -> cycleIndex,
                     index -> cycleIndex = index, (pattern, count) -> moved.add(new Moved(pattern, count)));
@@ -360,6 +393,8 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implemen
     public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.writeNbt(nbt, wrapper);
         partyLink.write(nbt);
+        if (migrating) nbt.putBoolean("LinkMigrating", true);
+        else nbt.putBoolean("LinkSettled", true);
         nbt.putString("Target", target.asString());
         nbt.putInt("CycleIndex", cycleIndex);
         nbt.putBoolean("LastSucceeded", lastSucceeded);
@@ -370,6 +405,8 @@ public class PiggyBankBlockEntity extends CartridgeContainerBlockEntity implemen
     public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapper) {
         super.readNbt(nbt, wrapper);
         partyLink.read(nbt);
+        // Saved before it had to be linked (neither key): links itself once (serverTick)
+        migrating = nbt.getBoolean("LinkMigrating") || !nbt.contains("LinkSettled");
         target = Target.TURN_PLAYER;
         for (Target value : Target.values()) {
             if (value.asString().equals(nbt.getString("Target"))) target = value;

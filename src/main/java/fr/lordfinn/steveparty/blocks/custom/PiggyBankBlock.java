@@ -3,7 +3,11 @@ package fr.lordfinn.steveparty.blocks.custom;
 import com.mojang.serialization.MapCodec;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.CartridgeContainer;
 import net.minecraft.block.*;
+import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
@@ -94,6 +98,15 @@ public class PiggyBankBlock extends CartridgeContainer {
     @Override
     public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new PiggyBankBlockEntity(pos, state);
+    }
+
+    /** Server side: an old Piggy Bank links itself once to its party ({@link PiggyBankBlockEntity#serverTick}). */
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        if (world.isClient || type != ModBlockEntities.PIGGY_BANK_ENTITY) return null;
+        return (tickWorld, pos, tickState, blockEntity) -> {
+            if (blockEntity instanceof PiggyBankBlockEntity bank && tickWorld instanceof ServerWorld serverWorld) bank.serverTick(serverWorld);
+        };
     }
 
     @Override
