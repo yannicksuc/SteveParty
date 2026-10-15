@@ -21,7 +21,7 @@ import java.util.Objects;
 /**
  * Client-side feedback of one Mula: particles and quiet sounds started by its animations (timeline instructions, so
  * every player sees them at the same moment of the same synced animation) or by changes of its synced state (fed,
- * named, leashed, teleported, just spawned), and the food it absorbs (or refuses) as light.
+ * named, leashed, teleported, just spawned), and the food it absorbs as light.
  * <p>
  * Cheap: a few counters per tick; particles only for a Mula drawn in the last few ticks (off screen or too far:
  * nothing), through {@code World#addParticle}, which follows the particle setting and skips far particles. Particle
@@ -35,8 +35,6 @@ public final class MulaEffects {
      */
     public static final int ABSORB_RISE_TICKS = 11, ABSORB_TICKS = 25;
     private static final int MOTES = 4, MOTE_START = 6, MOTE_GAP = 2, MOTE_TRAVEL = 13;
-    /** Refusing: the item rises for REFUSE_TOP_TICKS, its motes puff away, it sinks back by REFUSE_TICKS. */
-    private static final int REFUSE_TOP_TICKS = 14, REFUSE_TICKS = 36;
     /** Ticks of the orbiting lights (star_orbit) and of the comet tail (comet_loop, same timing as its loop). */
     private static final int ORBIT_TICKS = 44, COMET_TICKS = 20;
     /** Radius of the comet loop, in model pixels (mula_animations.py COMET_R). */
@@ -50,8 +48,6 @@ public final class MulaEffects {
     private static final MulaSparkleEffect WHITE_TWINKLE = new MulaSparkleEffect(0xFFFFFF, 1f, MulaSparkleEffect.TWINKLE);
     private static final MulaSparkleEffect BIG_WHITE_TWINKLE = new MulaSparkleEffect(0xFFFFFF, 1.6f, MulaSparkleEffect.TWINKLE);
     private static final MulaSparkleEffect SLEEPY_Z = new MulaSparkleEffect(0xDDEBFF, 1f, MulaSparkleEffect.Z);
-    /** Pale motes that fail to merge (refused food). */
-    private static final MulaSparkleEffect PALE_TWINKLE = new MulaSparkleEffect(0xD8D8E6, 0.8f, MulaSparkleEffect.TWINKLE);
 
     private final MulaEntity mula;
     /** Last age at which the Mula was drawn (set by the renderer). */
@@ -114,10 +110,9 @@ public final class MulaEffects {
     /** Everyday sounds every 2.5 to 7 s (awake) or 8 to 16 s (resting): it twinkles softly. */
     private static final int VOICE_MIN = 50, VOICE_RANGE = 90, RESTING_VOICE_MIN = 160, RESTING_VOICE_RANGE = 160;
 
-    /** The item being absorbed or refused; age -1 when none. Poses are kept in fields: nothing allocated per frame. */
+    /** The item being absorbed; age -1 when none. Poses are kept in fields: nothing allocated per frame. */
     private ItemStack itemStack = ItemStack.EMPTY;
     private int itemAge = -1;
-    private boolean itemRefused;
     private double handX, handY, handZ;
     private double meltX, meltY, meltZ;
     private double itemX, itemY, itemZ;
@@ -300,7 +295,7 @@ public final class MulaEffects {
     }
 
     /** Timeline instructions of the animations. */
-    void instruction(String instructions) {
+    public void instruction(String instructions) {
         for (String raw : instructions.split(";")) {
             switch (raw.trim()) {
                 case "sparkle_small" -> {
@@ -350,10 +345,10 @@ public final class MulaEffects {
      * takes the light in. The body answers with the synced "celebrate" (inhale, shimmer, warm swell), timed so the
      * motes arrive when it swells; its size and inner lights grow at that moment (MulaMotion holds them till then).
      */
-    void onFed() {
+    public void onFed() {
         ItemStack food = mula.getLastFood();
         if (food.isEmpty()) return;
-        startItem(food, false);
+        startItem(food);
         chime(1.9f, 0.2f);
         allay(SoundEvents.ENTITY_ALLAY_ITEM_TAKEN, 0.35f, 1.2f);
     }
@@ -380,8 +375,8 @@ public final class MulaEffects {
     }
 
     /**
-     * "No" (not its food, or still taking the last one in): the item held out floats up a little towards it, its motes
-     * try to reach the Mula but can't merge and puff away, and the item drifts softly back down to the player's hand.
+     * "No" (not its food, or still taking the last one in): a little grey cloud over its head and a low voice, with the
+     * synced head shake. The item stays in the player's hand: only a meal (onFed) makes it fly to the Mula.
      */
     private void refuse() {
         allay(SoundEvents.ENTITY_ALLAY_ITEM_THROWN, 0.3f, 0.75f);
@@ -393,16 +388,10 @@ public final class MulaEffects {
             world.addParticle(ParticleTypes.SMOKE, mula.getX() + random.nextGaussian() * 0.1, top + random.nextDouble() * 0.15,
                     mula.getZ() + random.nextGaussian() * 0.1, 0, 0.015, 0);
         }
-        PlayerEntity player = mula.getWorld().getClosestPlayer(mula, 8);
-        ItemStack held = player == null ? ItemStack.EMPTY : player.getMainHandStack();
-        if (held.isEmpty()) {
-            sound(SoundEvents.BLOCK_AMETHYST_BLOCK_HIT, 0.3f, 0.7f);
-            return;
-        }
-        startItem(held.copyWithCount(1), true);
+        sound(SoundEvents.BLOCK_AMETHYST_BLOCK_HIT, 0.3f, 0.7f);
     }
 
-    private void startItem(ItemStack stack, boolean refused) {
+    private void startItem(ItemStack stack) {
         PlayerEntity player = mula.getWorld().getClosestPlayer(mula, 8);
         if (player != null) {
             float yaw = player.getYaw() * MathHelper.RADIANS_PER_DEGREE;
@@ -416,69 +405,46 @@ public final class MulaEffects {
             handZ = mula.getZ();
         }
         itemStack = stack;
-        itemRefused = refused;
         itemAge = 0;
         moteSeed = mula.getRandom().nextFloat() * MathHelper.TAU;
     }
 
-    /** Per tick while the item lives: its dissolving glitter, the spiral of motes, the arrival or the refusal. */
+    /** Per tick while the item lives: its dissolving glitter, the spiral of motes, the arrival. */
     private void tickItem(World world) {
         itemAge++;
-        int end = itemRefused ? REFUSE_TICKS : ABSORB_TICKS;
-        if (itemAge > end) {
+        if (itemAge > ABSORB_TICKS) {
             itemAge = -1;
             return;
         }
         boolean visible = visible();
         double cx = mula.getX(), cy = centerY(), cz = mula.getZ();
         itemPose(1f, cx, cy, cz);
-        if (!itemRefused) {
-            // the item melts: glitter falling off it while it rises and shrinks
-            if (visible && itemAge <= ABSORB_RISE_TICKS) {
-                world.addParticle(mula.getVariant().getTwinkle(), itemX + jitter(0.12), itemY + jitter(0.12),
-                        itemZ + jitter(0.12), 0, 0.01, 0);
-            }
-            // then its motes spiral in, one after the other, leaving short trails (two points per tick)
-            if (visible) {
-                for (int k = 0; k < MOTES; k++) {
-                    for (int half = 0; half < 2; half++) {
-                        double u = (itemAge - 0.5 * half - MOTE_START - MOTE_GAP * k) / (double) MOTE_TRAVEL;
-                        if (u < 0 || u > 1) continue;
-                        motePoint(u, k, cx, cy, cz);
-                        world.addParticle(k % 2 == 0 ? mula.getVariant().getTwinkle() : WHITE_TWINKLE, moteX, moteY, moteZ,
-                                0, 0, 0);
-                    }
+        // the item melts: glitter falling off it while it rises and shrinks
+        if (visible && itemAge <= ABSORB_RISE_TICKS) {
+            world.addParticle(mula.getVariant().getTwinkle(), itemX + jitter(0.12), itemY + jitter(0.12),
+                    itemZ + jitter(0.12), 0, 0.01, 0);
+        }
+        // then its motes spiral in, one after the other, leaving short trails (two points per tick)
+        if (visible) {
+            for (int k = 0; k < MOTES; k++) {
+                for (int half = 0; half < 2; half++) {
+                    double u = (itemAge - 0.5 * half - MOTE_START - MOTE_GAP * k) / (double) MOTE_TRAVEL;
+                    if (u < 0 || u > 1) continue;
+                    motePoint(u, k, cx, cy, cz);
+                    world.addParticle(k % 2 == 0 ? mula.getVariant().getTwinkle() : WHITE_TWINKLE, moteX, moteY, moteZ,
+                            0, 0, 0);
                 }
             }
-            // a soft arpeggio of chimes while the light comes in
-            if (itemAge == 9 || itemAge == 13 || itemAge == 17 || itemAge == 21) {
-                chime(1.15f + (itemAge - 9) * 0.05f, 0.16f);
-            }
-            if (itemAge == ABSORB_TICKS) {
-                // the light has sunk in: a warm glow spreads from its heart
-                mula.getMotion().absorbGlow();
-                sound(SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, 0.35f, 1.5f);
-                chime(2.0f, 0.22f);
-            }
-        } else {
-            // its motes try to reach the Mula but bounce off and puff away
-            if (visible && itemAge >= 5 && itemAge <= REFUSE_TOP_TICKS) {
-                double u = (itemAge - 5) / (double) (REFUSE_TOP_TICKS - 5);
-                double px = MathHelper.lerp(u * 0.6, itemX, cx), py = MathHelper.lerp(u * 0.6, itemY, cy);
-                double pz = MathHelper.lerp(u * 0.6, itemZ, cz);
-                world.addParticle(PALE_TWINKLE, px + jitter(0.1), py + jitter(0.1), pz + jitter(0.1), 0, 0, 0);
-            }
-            if (itemAge == REFUSE_TOP_TICKS) {
-                if (visible) {
-                    for (int i = 0; i < 8; i++) {
-                        double a = MathHelper.TAU * i / 8 + moteSeed;
-                        world.addParticle(PALE_TWINKLE, itemX, itemY, itemZ, Math.cos(a) * 0.09, 0.03 + Math.sin(a) * 0.05,
-                                Math.sin(a) * 0.09);
-                    }
-                }
-                sound(SoundEvents.BLOCK_AMETHYST_CLUSTER_HIT, 0.35f, 0.6f);
-                chime(0.8f, 0.15f);
-            }
+        }
+        // a soft arpeggio of chimes while the light comes in
+        if (itemAge == 9 || itemAge == 13 || itemAge == 17 || itemAge == 21) {
+            chime(1.15f + (itemAge - 9) * 0.05f, 0.16f);
+        }
+        if (itemAge == ABSORB_TICKS) {
+            // the light has sunk in: a warm glow spreads from its heart
+            mula.getMotion().absorbGlow();
+            sound(SoundEvents.BLOCK_AMETHYST_BLOCK_RESONATE, 0.35f, 1.5f);
+            chime(2.0f, 0.22f);
         }
     }
 
@@ -502,42 +468,30 @@ public final class MulaEffects {
     }
 
     /**
-     * Pose of the item (absorbed or refused) at partialTick, into itemX/Y/Z, itemScale, itemSpin. Absorbed: it rises
-     * and drifts a third of the way, turning slowly, and shrinks to nothing by ABSORB_RISE_TICKS (where it melted is
-     * remembered for the motes). Refused: it rises towards the Mula, hesitates, and sinks back to the hand.
+     * Pose of the item being absorbed at partialTick, into itemX/Y/Z, itemScale, itemSpin: it rises and drifts a third
+     * of the way, turning slowly, and shrinks to nothing by ABSORB_RISE_TICKS (where it melted is remembered for the
+     * motes).
      */
     private void itemPose(float partialTick, double cx, double cy, double cz) {
         float age = itemAge - 1 + partialTick;
-        if (!itemRefused) {
-            double p = MathHelper.clamp(age / ABSORB_RISE_TICKS, 0, 1);
-            double e = 1 - (1 - p) * (1 - p);
-            itemX = MathHelper.lerp(e * 0.35, handX, cx);
-            itemY = MathHelper.lerp(e * 0.35, handY, cy) + 0.45 * e;
-            itemZ = MathHelper.lerp(e * 0.35, handZ, cz);
-            double shrink = MathHelper.clamp((p - 0.35) / 0.65, 0, 1);
-            itemScale = (float) (0.6 * (1 - Easing.smoothstep(shrink)));
-            itemSpin = (float) (p * 160);
-            if (age <= ABSORB_RISE_TICKS * 0.7) {
-                meltX = itemX;
-                meltY = itemY;
-                meltZ = itemZ;
-            }
-        } else {
-            double up = MathHelper.clamp(age / REFUSE_TOP_TICKS, 0, 1);
-            double down = MathHelper.clamp((age - REFUSE_TOP_TICKS - 3) / (REFUSE_TICKS - REFUSE_TOP_TICKS - 3), 0, 1);
-            double e = Easing.smoothstep(up) * (1 - Easing.smoothstep(down));
-            itemX = MathHelper.lerp(e * 0.45, handX, cx);
-            itemY = MathHelper.lerp(e * 0.45, handY, cy) + 0.5 * e;
-            itemZ = MathHelper.lerp(e * 0.45, handZ, cz);
-            // a little hesitant wobble at the top, then it fades away into the hand
-            itemSpin = (float) (Math.sin(age * 0.5) * 25 * e);
-            itemScale = (float) (0.6 * (1 - MathHelper.clamp((down - 0.75) / 0.25, 0, 1)));
+        double p = MathHelper.clamp(age / ABSORB_RISE_TICKS, 0, 1);
+        double e = 1 - (1 - p) * (1 - p);
+        itemX = MathHelper.lerp(e * 0.35, handX, cx);
+        itemY = MathHelper.lerp(e * 0.35, handY, cy) + 0.45 * e;
+        itemZ = MathHelper.lerp(e * 0.35, handZ, cz);
+        double shrink = MathHelper.clamp((p - 0.35) / 0.65, 0, 1);
+        itemScale = (float) (0.6 * (1 - Easing.smoothstep(shrink)));
+        itemSpin = (float) (p * 160);
+        if (age <= ABSORB_RISE_TICKS * 0.7) {
+            meltX = itemX;
+            meltY = itemY;
+            meltZ = itemZ;
         }
     }
 
     // ------------------------------------------------------------------------------------------ item (renderer)
 
-    /** @return the item being absorbed or refused, or EMPTY. */
+    /** @return the item being absorbed (flying to the Mula), or EMPTY. */
     public ItemStack itemStack() {
         return itemAge >= 0 ? itemStack : ItemStack.EMPTY;
     }

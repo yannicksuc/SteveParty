@@ -1256,12 +1256,11 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
             return ActionResult.SUCCESS;
         }
 
-        // Its colour and edible (MulaFood): a food gives its nutrition, a potion minutes x (level x 2)
-        int hungerValue = MulaFood.value(this.getVariant(), stack);
-        int newHunger = Math.min(getHunger() + hungerValue, MAX_HUNGER);
-        setHunger(newHunger);
-
+        // Its colour and edible (MulaFood): a food gives its nutrition, a potion minutes x (level x 2). Decided by the
+        // server only: the client doesn't know its chewing cooldown, so a guess there could grow a Mula that refuses.
         if (!player.getWorld().isClient) {
+            int hungerValue = MulaFood.value(this.getVariant(), stack);
+            setHunger(Math.min(getHunger() + hungerValue, MAX_HUNGER));
             boolean potion = stack.isOf(Items.POTION);
             Text message = potion
                     ? Text.translatable("message.steveparty.mula.feed.potion", getHunger(), MAX_HUNGER, stack.getName(),
@@ -1317,10 +1316,10 @@ public class MulaEntity extends TameableEntity implements GeoEntity, FollowsOwne
     }
 
     /**
-     * Server: "no" to what this player holds out. It shakes its head (its clients float the item up and back down, puff
-     * a little grey cloud) and, when something was held out, says why in the player's action bar: food of another
-     * colour (never which one), or something no Mula eats. Still taking in its last meal, it only shakes its head. At most
-     * once per {@value #REFUSAL_GAP_TICKS} ticks for the same player.
+     * Server: "no" to what this player holds out. It shakes its head (its clients puff a little grey cloud; the item
+     * stays in the hand, only a meal flies to it) and, when something was held out, says why in the player's action
+     * bar: food of another colour (never which one), or something no Mula eats. Still taking in its last meal, it only
+     * shakes its head. At most once per {@value #REFUSAL_GAP_TICKS} ticks for the same player.
      */
     private void refuse(PlayerEntity player, ItemStack stack) {
         if (player.getUuid().equals(lastRefused) && this.age - lastRefusalAge < REFUSAL_GAP_TICKS) return;

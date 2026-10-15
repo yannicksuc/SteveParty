@@ -133,8 +133,8 @@ public class MulaEntityRenderer extends GeoEntityRenderer<MulaEntity> {
     }
 
     /**
-     * The food being absorbed (rising from the hand, turning slowly, shrinking into light) or refused (floating up,
-     * hesitating, sinking back to the hand): its pose comes from MulaEffects.
+     * The food being absorbed (rising from the hand, turning slowly, shrinking into light), only for a meal: its pose
+     * comes from MulaEffects.
      */
     private static void renderFloatingItem(MatrixStack poseStack, MulaEntity mula, VertexConsumerProvider bufferSource,
                                            float partialTick) {
