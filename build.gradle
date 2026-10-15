@@ -40,6 +40,13 @@ loom {
             name "Game Test"
             vmArg "-Dfabric-api.gametest"
             vmArg "-Dfabric-api.gametest.report-file=${project.layout.buildDirectory.get()}/gametest/junit.xml"
+            // While iterating, run only a feature's tests: ./gradlew --no-watch-fs runGametest -Ptests=PiggyBank,MagpieNest
+            // keeps the tests whose class.method contains one of the tokens (any case; none matched = the run fails).
+            // Without -Ptests the whole suite runs: do that once before merging. The filter lives in the gametest
+            // source set only (mixin TestFunctionsFilterMixin), never in the shipped mod.
+            if (project.hasProperty('tests')) {
+                vmArg "-Dsteveparty.gametest.only=${project.property('tests')}"
+            }
             runDir "build/gametest"
             source sourceSets.gametest
         }
