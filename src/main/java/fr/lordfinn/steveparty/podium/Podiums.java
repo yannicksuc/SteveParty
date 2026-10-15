@@ -639,18 +639,6 @@ public final class Podiums {
         return payload;
     }
 
-    /** Sneak + right click with the Wrench: the group of the podium is reset. */
-    public static void wrenchReset(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
-        if (!MiniGamePages.canEdit(player)) {
-            player.sendMessage(Text.translatable("message.steveparty.podium.not_allowed").formatted(Formatting.RED), true);
-            return;
-        }
-        PodiumGroup group = PodiumGroup.of(world, pos);
-        reset(group);
-        world.playSound(null, pos, SoundEvents.BLOCK_COMPARATOR_CLICK, SoundCategory.BLOCKS, 0.8f, 0.6f);
-        player.sendMessage(Text.translatable("message.steveparty.podium.reset", group.columns().size()).formatted(Formatting.GOLD), true);
-    }
-
     /** The podium the nearest to {@code center} within {@code radius} blocks (loaded chunks only), null for none. */
     public static @Nullable BlockPos nearestPodium(ServerWorld world, Vec3d center, int radius) {
         BlockPos best = null;

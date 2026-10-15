@@ -1,6 +1,8 @@
 package fr.lordfinn.steveparty.client.screens;
 
+import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.client.gui.UiText;
+import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlock;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.SpawnMarkerSettings;
 import fr.lordfinn.steveparty.client.gui.PartyButton;
@@ -16,26 +18,32 @@ import net.minecraft.util.math.MathHelper;
 
 /**
  * The menu of a Spawn Bubble (an empty hand on its plate): when its mob shows (only when a token lands on its space, or all
- * the party long) and how high above the plate its bubble floats (-4 to +8 blocks, by half blocks; Shift: by blocks; the
- * wheel too). Each change is sent at once; the bubble shows where the mob will be.
+ * the party long), how high above the plate its bubble floats (-4 to +8 blocks, by half blocks; Shift: by blocks; the
+ * wheel too) and which way its mob faces (a sixteenth of a turn per click). Each change is sent at once; the bubble
+ * shows where the mob will be.
  */
 public class SpawnMarkerScreen extends Screen {
     private static final int PANEL_W = 220, PAD = 12;
     private static final String K = "gui.steveparty.spawn_marker.";
+    /** The facing dials (gui/sprites/spawn_marker/facing_N, 13 px): N from the north, clockwise by sixteenths of a turn. */
+    private static final int DIAL = 13;
 
     private final BlockPos pos;
     private boolean resident;
     /** Linked to star spaces only: its Mula shows while the star is there, not on landing. */
     private final boolean star;
     private int lift;
+    /** The sixteenth of a turn its mob faces ({@link SpawnMarkerBlock#ROTATION}). */
+    private int rotation;
     private PartyButton onLanding, always;
-    private int panelTop, panelHeight, whenY, liftY, liftLabelHeight;
+    private int panelTop, panelHeight, whenY, liftY, liftLabelHeight, turnY, turnLabelHeight;
 
     public SpawnMarkerScreen(BlockPos pos, SpawnMarkerBlockEntity marker) {
         super(Text.translatable(K + "title"));
         this.pos = pos.toImmutable();
         this.resident = marker.isResident();
         this.lift = marker.getLiftSteps();
+        this.rotation = marker.getCachedState().get(SpawnMarkerBlock.ROTATION);
         this.star = !marker.getLinkedMobs().isEmpty()
                 && marker.getLinkedMobs().stream().allMatch(type -> type == ModEntities.MULA_ENTITY);
     }
@@ -47,7 +55,9 @@ public class SpawnMarkerScreen extends Screen {
         int whenHeight = UiText.height(textRenderer, Text.translatable(K + "when"), inner);
         liftLabelHeight = UiText.height(textRenderer, Text.translatable(K + "lift"), liftLabelWidth());
         int liftRow = Math.max(20, liftLabelHeight);
-        panelHeight = 18 + whenHeight + 2 + 20 + 6 + liftRow + PAD;
+        turnLabelHeight = UiText.height(textRenderer, Text.translatable(K + "turn"), liftLabelWidth());
+        int turnRow = Math.max(20, turnLabelHeight);
+        panelHeight = 18 + whenHeight + 2 + 20 + 6 + liftRow + 6 + turnRow + PAD;
         panelTop = (height - panelHeight) / 2;
         int left = (width - PANEL_W) / 2 + PAD, right = (width + PANEL_W) / 2 - PAD;
         int half = (inner - 4) / 2;
@@ -63,6 +73,11 @@ public class SpawnMarkerScreen extends Screen {
                 .setTooltip(Tooltip.of(Text.translatable(K + "lift.hint")));
         addDrawableChild(new PartyButton(right - 20, liftY, 20, 20, Text.literal("+"), b -> step(1)))
                 .setTooltip(Tooltip.of(Text.translatable(K + "lift.hint")));
+        turnY = liftY + 20 + (liftRow - 20) / 2 + 6 + (turnRow - 20) / 2;
+        addDrawableChild(new PartyButton(right - 70, turnY, 20, 20, Text.literal("<"), b -> turn(-1)))
+                .setTooltip(Tooltip.of(Text.translatable(K + "turn.left")));
+        addDrawableChild(new PartyButton(right - 20, turnY, 20, 20, Text.literal(">"), b -> turn(1)))
+                .setTooltip(Tooltip.of(Text.translatable(K + "turn.right")));
         refresh();
     }
 
@@ -77,8 +92,14 @@ public class SpawnMarkerScreen extends Screen {
         send();
     }
 
+    /** A sixteenth of a turn (22.5°), clockwise or not. */
+    private void turn(int direction) {
+        rotation = (rotation + direction) & 15;
+        send();
+    }
+
     private void send() {
-        if (ClientPlayNetworking.canSend(SpawnMarkerSettings.ID)) ClientPlayNetworking.send(new SpawnMarkerSettings(pos, resident, lift));
+        if (ClientPlayNetworking.canSend(SpawnMarkerSettings.ID)) ClientPlayNetworking.send(new SpawnMarkerSettings(pos, resident, lift, rotation));
         refresh();
     }
 
@@ -129,9 +150,17 @@ public class SpawnMarkerScreen extends Screen {
         int centre = (width + PANEL_W) / 2 - PAD - 35;
         PartyGui.inset(context, centre - 14, liftY, 28, 20, 0xFFFFFFFF, false, false);
         UiText.centered(context, textRenderer, value, centre - 13, liftY + 6, 26, PartyGui.TEXT_DARK, false);
+        UiText.wrapped(context, textRenderer, Text.translatable(K + "turn"), left + PAD, turnY + 10 - turnLabelHeight / 2,
+                liftLabelWidth(), PartyGui.TEXT_DARK, false);
+        // Where its mob looks, seen from above with the north up (its name on hover)
+        PartyGui.inset(context, centre - 14, turnY, 28, 20, 0xFFFFFFFF, false, false);
+        // The block's rotation 0 faces south: the dial's index is that of SpawnMarkerBlock#compass
+        context.drawGuiTexture(Steveparty.id("spawn_marker/facing_" + ((rotation + 8) & 15)), centre - 7, turnY + 3, DIAL, DIAL);
         for (var child : children()) {
             if (child instanceof PartyButton button) button.render(context, mouseX, mouseY, delta);
         }
+        if (mouseX >= centre - 14 && mouseX < centre + 14 && mouseY >= turnY && mouseY < turnY + 20)
+            context.drawTooltip(textRenderer, Text.translatable(K + "facing." + SpawnMarkerBlock.compass(rotation)), mouseX, mouseY);
     }
 
     @Override

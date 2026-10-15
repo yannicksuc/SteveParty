@@ -570,6 +570,45 @@ public class PartyControllerEntity extends SyncedBlockEntity implements Extended
     }
 
     /**
+     * Its rules, as the Wrench copies them: the Settings and Gains pages and the rounds, not the chests of its bank
+     * (linked with the brush) nor anything of a party.
+     */
+    public NbtCompound writeRules(RegistryWrapper.WrapperLookup registries) {
+        NbtCompound rules = new NbtCompound();
+        settings.writeNbt(rules, registries);
+        for (String bankKey : BANK_KEYS) rules.remove(bankKey);
+        rules.putInt("Rounds", partyData.getNbTurn());
+        return rules;
+    }
+
+    /**
+     * Takes the rules of another controller ({@link #writeRules}), its bank's chests kept; the « Infinite bank » only
+     * from {@code player} who may switch it, the rounds only while no party runs.
+     *
+     * @return whether they changed
+     */
+    public boolean readRules(NbtCompound rules, RegistryWrapper.WrapperLookup registries, PlayerEntity player) {
+        NbtCompound before = writeRules(registries);
+        NbtCompound merged = new NbtCompound();
+        settings.writeNbt(merged, registries);
+        NbtCompound taken = rules.copy();
+        for (String bankKey : BANK_KEYS) taken.remove(bankKey);
+        taken.remove("Rounds");
+        if (!canSwitchInfiniteBank(player)) taken.remove("InfiniteBank");
+        merged.copyFrom(taken);
+        if (!rules.getBoolean("InfiniteBank") && canSwitchInfiniteBank(player)) merged.remove("InfiniteBank");
+        settings.readNbt(merged, registries);
+        if (rules.contains("Rounds") && !partyData.isStarted())
+            partyData.setNbTurn(Math.clamp(rules.getInt("Rounds"), MIN_ROUNDS, MAX_ROUNDS));
+        boolean changed = !before.equals(writeRules(registries));
+        if (changed) markDirty();
+        return changed;
+    }
+
+    /** The keys of {@link PartySettings} about its bank's chests (positions), never copied. */
+    private static final List<String> BANK_KEYS = List.of("BankCartridge", "BankInternal", "ReturnBankCartridge");
+
+    /**
      * Who may change the settings of this controller and start a party from its dashboard: a player allowed to build
      * here (not in Adventure / Spectator mode, not in a protected area); once a party runs, only an operator or a
      * Game Master (a Tokenizer Wand enchanted with Game Master in hand), so that no player changes the rules mid-game.

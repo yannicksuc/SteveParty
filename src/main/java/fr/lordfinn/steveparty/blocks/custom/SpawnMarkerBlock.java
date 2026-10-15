@@ -166,7 +166,7 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return COMPASS[(rotation + 8) & 15];
     }
 
-    /** The Wrench: its menu, or turned (see {@link #wrench}); any other item: that item's use (the brush links it...). */
+    /** The Wrench: its menu (see {@link #wrench}); any other item: that item's use (the brush links it...). */
     @Override
     protected ItemActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player,
                                              Hand hand, BlockHitResult hit) {
@@ -192,7 +192,7 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         return ActionResult.PASS;
     }
 
-    /** With the Wrench: its menu; sneaking, turned a sixteenth of a turn clockwise (22.5°). */
+    /** With the Wrench: its menu (sneaking, the Wrench copies its settings: see WrenchCopy). */
     public static ActionResult wrench(BlockState state, World world, BlockPos pos, PlayerEntity player) {
         if (!(world.getBlockEntity(pos) instanceof SpawnMarkerBlockEntity)) return ActionResult.PASS;
         if (world.isClient) {
@@ -202,15 +202,6 @@ public class SpawnMarkerBlock extends BlockWithEntity {
         if (!ScreenHandlerChecks.canBuildAt(player, pos)) {
             player.sendMessage(Text.translatable("message.steveparty.spawn_marker.locked"), true);
             return ActionResult.CONSUME;
-        }
-        if (player.isSneaking()) {
-            BlockState turned = state.with(ROTATION, (state.get(ROTATION) + 1) & RotationPropertyHelper.getMax());
-            world.setBlockState(pos, turned, Block.NOTIFY_ALL);
-            player.sendMessage(Text.translatable("message.steveparty.spawn_marker.turned",
-                    Text.translatable("message.steveparty.spawn_marker.facing." + compass(turned.get(ROTATION)))), true);
-            world.playSound(null, pos, SoundEvents.BLOCK_WOOD_HIT, SoundCategory.BLOCKS, 0.6f, 1.4f);
-            if (world instanceof ServerWorld serverWorld) MarkerResidents.refresh(serverWorld, pos);
-            return ActionResult.SUCCESS;
         }
         return ActionResult.SUCCESS;
     }

@@ -142,7 +142,6 @@ public final class ItemTips {
                 .summary(KEY + "spawn_marker.summary")
                 .more(more -> more
                         .use(Tooltips.Keys.use(), KEY + "spawn_marker.use")
-                        .use(Tooltips.Keys.sneakUse(), KEY + "spawn_marker.sneak_use")
                         .note(KEY + "spawn_marker.link")
                         .note(KEY + "spawn_marker.default")));
         map.put(item("stencil_maker"), simple("stencil_maker"));

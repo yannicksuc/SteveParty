@@ -108,6 +108,8 @@
   "book.steveparty.guide.board.wrench.page1.text": "Elle règle aussi podiums, mâts et bulles, et casse le plastique d'un coup.",
   "book.steveparty.guide.board.wrench.page2.text": "- [#](1C4E80)**Pipette**[#]() : copie les destinations d'une cartouche sur d'autres\n- Une autre cartouche en main secondaire : échangée, liens gardés",
   "book.steveparty.guide.board.wrench.page2.title": "Pipette et échanges",
+  "book.steveparty.guide.board.wrench.page3.text": "[#](9A6A00)Accroupi + clic droit[#]() sur un bloc : ses réglages sont copiés.\n- Puis sur un bloc du même type : collés\n- Dans le vide : la Clé se vide\n- Réglages seulement : ni objets, ni liens",
+  "book.steveparty.guide.board.wrench.page3.title": "Copier les réglages",
   "book.steveparty.guide.cartridges.advance_back.description": "Des pas en plus, ou en moins",
   "book.steveparty.guide.cartridges.advance_back.name": "Avancer / Reculer",
   "book.steveparty.guide.cartridges.advance_back.page0.text": "Un pion qui termine ici repart de 1 à 6 cases :\\\n[#](23933C)**en avant**[#]() ou [#](E23C9A)**en arrière**[#]().",
