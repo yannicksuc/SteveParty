@@ -11,6 +11,7 @@ import fr.lordfinn.steveparty.blocks.custom.PartyController.StepPulse;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.steps.*;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.boardspaces.BoardSpaceDestination;
+import fr.lordfinn.steveparty.board.PartyLinked;
 import fr.lordfinn.steveparty.components.DestinationsComponent;
 import fr.lordfinn.steveparty.components.ModComponents;
 import fr.lordfinn.steveparty.entities.TokenStatus;
@@ -321,8 +322,11 @@ public class AntennaMomentsGameTests implements SteveGameTest {
         });
     }
 
-    /** An antenna linked to nothing hears nothing, even next to a running party. */
-    @GameTest(templateName = EMPTY_STRUCTURE, batchId = "antenna_unlinked")
+    /**
+     * An antenna linked to nothing hears nothing, even next to a running party, and shows it itself (its screen and
+     * bubble, « Liée »); saved before links were needed, it never links itself (it never found its party alone).
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 100, batchId = "antenna_unlinked")
     public void anUnlinkedAntennaHearsNothing(TestContext context) {
         UUID a = UUID.randomUUID();
         PartyData data = new PartyData();
@@ -336,7 +340,13 @@ public class AntennaMomentsGameTests implements SteveGameTest {
         controller.nextStep();
         controller.nextStep();
         context.assertTrue(antenna.getHeardAt() < 0 && !context.getBlockState(new BlockPos(5, 1, 1)).get(PartyBellBlock.POWERED), "heard nothing");
-        context.complete();
+        context.assertTrue(!antenna.isPartyLinked() && antenna.showsNotLinkedItself(), "shown unlinked, by itself");
+        context.assertEquals(antenna.notLinkedKey(), PartyLinked.NOT_LINKED_FEMININE_KEY, "« Liée à aucune partie »");
+        antenna.read(new NbtCompound(), context.getWorld().getRegistryManager());
+        context.waitAndRun(45, () -> {
+            context.assertTrue(!antenna.isPartyLinked(), "an old antenna never links itself");
+            context.complete();
+        });
     }
 
     /** Copied settings: the moment and the filter, never the waiting mode. */

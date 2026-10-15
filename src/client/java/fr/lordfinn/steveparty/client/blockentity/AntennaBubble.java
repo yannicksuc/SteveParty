@@ -2,6 +2,7 @@ package fr.lordfinn.steveparty.client.blockentity;
 
 import fr.lordfinn.steveparty.blocks.custom.PartyBellBlockEntity;
 import fr.lordfinn.steveparty.blocks.custom.PartyController.PartyMoment;
+import fr.lordfinn.steveparty.client.gui.NotLinkedMark;
 import fr.lordfinn.steveparty.client.screens.AntennaIcons;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
@@ -17,7 +18,8 @@ import org.joml.Matrix4f;
 /**
  * Over a Party Antenna, for a player with the Wrench in hand: what it listens to, readable from afar without opening
  * it. A dark plate edged with the colour of the moment's family, the moment's item on it; under it its filter
- * ({@code ≥5}) if it has one, and an hourglass if it waits.
+ * ({@code ≥5}) if it has one, and an hourglass if it waits. Linked to no party (it hears nothing then), a plate joined
+ * on its left holds the Tile Linker Brush crossed out in red ({@link NotLinkedMark}), the pair centred over it.
  * <p>
  * Drawn by the antenna's block entity renderer, facing the camera. Everything is opaque and writes depth: the plate
  * first (its edge one step behind it), then what is on it one step toward the camera (minecraft-rendering: a detail
@@ -46,11 +48,27 @@ final class AntennaBubble {
         matrices.translate(0.5, BUBBLE_Y, 0.5);
         matrices.multiply(dispatcher.camera.getRotation());
         matrices.scale(SCALE, -SCALE, SCALE);
+        boolean unlinked = !antenna.isPartyLinked();
+        // Unlinked: the moment's plate and the brush's plate on its left, centred together
+        if (unlinked) matrices.translate(HALF + 1, 0, 0);
         Matrix4f matrix = matrices.peek().getPositionMatrix();
 
         VertexConsumer plate = consumers.getBuffer(RenderLayer.getTextBackground());
         quad(plate, matrix, -HALF - 1, -HALF - 1, HALF + 1, HALF + 1, EDGE_Z, family);
         quad(plate, matrix, -HALF, -HALF, HALF, HALF, PLATE_Z, PLATE);
+        if (unlinked) {
+            // Joined to the moment's plate by one edge pixel
+            quad(plate, matrix, -3 * HALF - 2, -HALF - 1, -HALF, HALF + 1, EDGE_Z, family);
+            quad(plate, matrix, -3 * HALF - 1, -HALF, -HALF - 1, HALF, PLATE_Z, PLATE);
+            float centre = -2 * HALF - 1, half = ITEM / 2f;
+            matrices.push();
+            matrices.translate(centre, 0, 0);
+            matrices.scale(ITEM, -ITEM, 0.01f);
+            MinecraftClient.getInstance().getItemRenderer().renderItem(NotLinkedMark.BRUSH, ModelTransformationMode.GUI,
+                    LIGHT, OverlayTexture.DEFAULT_UV, matrices, layer -> new LitFromAbove(consumers.getBuffer(AntennaIcons.solid(layer))), antenna.getWorld(), 0);
+            matrices.pop();
+            NotLinkedMark.worldCross(matrices, consumers, centre + half, half, ITEM / 16f, 0.2f);
+        }
 
         // The item, flattened onto the plate as in an inventory, solid (AntennaIcons.solid) and lit from above whichever
         // way the bubble turns: as bright as in the screen

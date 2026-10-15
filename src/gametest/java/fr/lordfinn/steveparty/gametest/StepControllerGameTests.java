@@ -19,6 +19,7 @@ import fr.lordfinn.steveparty.gametest.kit.TestPlayers;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.test.GameTest;
 import net.minecraft.test.TestContext;
@@ -34,7 +35,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** The Party Rewinder (registry id step_controller): its buttons; linked with the Tile Linker Brush to any element of a party, what its pulses do to a party. */
+/**
+ * The Party Rewinder (registry id step_controller): its buttons; linked with the Tile Linker Brush to any element of a
+ * party, what its pulses do to a party; unlinked, nothing (never the nearest party); an old one links itself once.
+ */
 public class StepControllerGameTests implements SteveGameTest {
 
     private static StepControllerBlockEntity stepController(TestContext context, BlockPos pos) {
@@ -77,7 +81,11 @@ public class StepControllerGameTests implements SteveGameTest {
             BlockPos stepAbs = context.getAbsolutePos(stepPos);
             context.assertTrue(LinkTargets.accepts(context.getWorld(), spaceAbs) && LinkTargets.accepts(context.getWorld(), context.getAbsolutePos(boardParty)),
                     "a board space and a Party Controller are link targets");
-            context.assertTrue(stepController.driven().party() == near, "not linked: the nearest party");
+            context.assertTrue(stepController.driven().party() == null && !stepController.isPartyLinked(), "not linked: nothing, not the nearest party");
+            context.assertTrue(!stepController.trigger() && near.getPartyData().getStepIndex() == 0, "not linked: a pulse does nothing");
+            context.assertEquals(stepController.getComparatorOutput(), 0, "not linked: its comparator off");
+            context.assertEquals(key((Text) ((TranslatableTextContent) stepController.describe(StepPulse.Mode.NEXT).getContent()).getArgs()[1]),
+                    HINT + "none", "said: linked to no party");
 
             ItemStack brush = BoardLinkingGameTests.brush(player);
             BoardLinkingGameTests.paint(player, brush, context, stepAbs, spaceAbs);
@@ -126,6 +134,7 @@ public class StepControllerGameTests implements SteveGameTest {
             context.assertTrue(data.getCurrentStep() instanceof TokenTurnPartyStep turn && a.equals(turn.getTokenUUID()), "a's turn");
 
             StepControllerBlockEntity stepController = stepController(context, stepPos);
+            stepController.setLink(GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(controllerPos)));
             context.assertEquals(stepController.getMode(), StepPulse.Mode.NEXT, "« next » first");
             context.assertTrue(stepController.trigger(), "next");
             context.assertTrue(data.getCurrentStep() instanceof TokenTurnPartyStep turn && b.equals(turn.getTokenUUID()), "a's turn passed: b's turn");
@@ -156,6 +165,39 @@ public class StepControllerGameTests implements SteveGameTest {
             TestCleanup.removeIf(context, controllerPos, ModBlocks.PARTY_CONTROLLER);
         }
         context.complete();
+    }
+
+    /**
+     * Saved before it had to be linked: it links itself to the nearest Party Controller (a running party's first), once;
+     * unlinked again, or saved and loaded again, it never links itself any more. A new one never does.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 200, batchId = "step_controller_migration")
+    public void anOldStepControllerLinksItselfOnceToTheNearestController(TestContext context) {
+        BlockPos near = new BlockPos(1, 1, 1), far = new BlockPos(8, 1, 8), oldPos = new BlockPos(4, 1, 4), newPos = new BlockPos(5, 1, 4);
+        runningParty(context, near);
+        context.setBlockState(far.down(), Blocks.STONE);
+        context.setBlockState(far, ModBlocks.PARTY_CONTROLLER);
+        TestCleanup.atEnd(context, () -> {
+            context.removeBlock(far);
+            context.removeBlock(near);
+        });
+        StepControllerBlockEntity fresh = stepController(context, newPos);
+        StepControllerBlockEntity old = stepController(context, oldPos);
+        var registries = context.getWorld().getRegistryManager();
+        // As saved before: no link, none of its link keys
+        old.readNbt(new NbtCompound(), registries);
+        GlobalPos nearest = GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(near));
+        context.waitAndRun(45, () -> {
+            context.assertEquals(old.getLink(), nearest, "linked to the nearest controller");
+            context.assertTrue(!fresh.isPartyLinked(), "a new one stays unlinked");
+            old.setLink(null);
+            NbtCompound saved = old.createNbt(registries);
+            old.readNbt(saved, registries);
+            context.waitAndRun(45, () -> {
+                context.assertTrue(!old.isPartyLinked() && old.driven().party() == null, "never links itself again");
+                context.complete();
+            });
+        });
     }
 
     private static final String HINT = "block.steveparty.step_controller.hint.";

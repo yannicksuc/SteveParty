@@ -23,4 +23,22 @@ package fr.lordfinn.steveparty.board;
 public interface PartyLinked {
     /** Its link (the implementer is a block entity: the brush finds it at its position). */
     PartyLink partyLink();
+
+    /** Whether it serves a party: linked with the brush (on both sides); a block linked otherwise too says so. */
+    default boolean isPartyLinked() {
+        return partyLink().get() != null;
+    }
+
+    /** The tooltip of its crossed brush, unlinked: the shared one in the block's grammatical gender (masculine here). */
+    default String notLinkedKey() {
+        return NOT_LINKED_KEY;
+    }
+
+    /** {@link #notLinkedKey} of a block whose name is masculine, then feminine (in French: « Lié... le », « Liée... la »). */
+    String NOT_LINKED_KEY = "gui.steveparty.not_linked", NOT_LINKED_FEMININE_KEY = "gui.steveparty.not_linked.feminine";
+
+    /** Whether it shows its crossed brush itself (its panel, menu or bubble), else a plate over it does when looked at. */
+    default boolean showsNotLinkedItself() {
+        return false;
+    }
 }

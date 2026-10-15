@@ -131,7 +131,7 @@
 	quest.030135F1CA2F65E1.quest_desc: [
 		"Clic droit avec la Clé à molette : tous les moments qu'elle peut écouter, par famille (partie, tours, pièces et étoiles, évènements, mini-jeux). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...)."
 		"Mode attente : la partie se fige jusqu'à ce qu'elle reçoive un signal."
-		"Lie-la au Pinceau lieur à un élément d'une partie (le Contrôleur de Party, une case...) : elle écoute cette partie ; pas liée, elle n'entend rien."
+		"Lie-la au Pinceau lieur à un élément d'une partie (le Contrôleur de Party, une case...) : elle écoute cette partie ; pas liée, elle n'entend rien (son écran et sa bulle montrent le pinceau barré de rouge)."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.030135F1CA2F65E1.title: "Antenne de Party"
@@ -308,7 +308,7 @@
 		"Un magnétophone. Clic droit sur un bouton du dessus : son mode. Précédent · Rejouer · Suivant."
 		"Suivant + une impulsion : passe ce que la partie attend (tour pas lancé, antenne, manche de chauffe) ; en mini-jeu, le termine avec les places des podiums."
 		"Rejouer + une impulsion : le tour est annulé et rejoué, ou la manche recommence. Précédent : retour au tour d'avant."
-		"Lie-le au Pinceau lieur à un élément d'une partie ; sinon il pilote la partie la plus proche (64 blocs)."
+		"Lie-le au Pinceau lieur à un élément d'une partie : il pilote cette partie ; pas lié, il ne fait rien (regardé, il montre le pinceau barré de rouge)."
 	]
 	quest.101F5B0C2C547670.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.101F5B0C2C547670.title: "Magnéto de Party"

@@ -49,7 +49,10 @@ import java.util.UUID;
  *     (the mini-game of that page, played by a party or as a test), however far and in whatever dimension;</li>
  *     <li>else, linked to mini-game pages (page in hand, click: see {@code Podiums#clickLink}, the links kept by the
  *     pages and only mirrored here for the clients): the mini-game of one of those pages;</li>
- *     <li>else the nearest running party within {@value #RANGE} blocks.</li>
+ *     <li>else nothing: a pulse only shakes it, its comparator gives 0, and a plate over it looked at shows the Tile
+ *     Linker Brush crossed out in red (see {@link PartyLinked}). Saved before it had to be linked (it drove the nearest
+ *     running party within {@value #RANGE} blocks then), it links itself once to the Party Controller nearest to it,
+ *     see {@link PartyLink#tick}.</li>
  * </ul>
  * A comparator reads the phase of the party it drives (see {@link PartyControllerEntity#getPhase}; a test of its
  * mini-game: the mini-game phase), 0 for none.
@@ -63,12 +66,14 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
     /** Its chosen button pushed in, by mode. */
     private static final RawAnimation[] MODE_ANIMATIONS = java.util.Arrays.stream(StepPulse.Mode.values())
             .map(each -> RawAnimation.begin().thenLoop("mode." + each.id())).toArray(RawAnimation[]::new);
+    /** The radius in which it found its party alone before it had to be linked (an old one links itself once). */
     public static final int RANGE = 64;
     private static final int CHECK_TICKS = 20;
     private StepPulse.Mode mode = StepPulse.Mode.NEXT;
     private boolean wasPowered = false;
     /** The party element it drives (Tile Linker Brush), null for none. */
-    private final PartyLink link = new PartyLink(this, this::syncToClients);
+    private final PartyLink link = new PartyLink(this, this::syncToClients)
+            .migratingFromNearest(RANGE, () -> !getLinkedPages().isEmpty());
     /** The pages it is linked to, as the pages say (checked again every second): what the clients show. */
     private List<UUID> linkedPages = List.of();
     /** The comparator output, checked again every second. */
@@ -144,9 +149,16 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         return link;
     }
 
+    /** Linked with the brush, or to mini-game pages (as last told, on the clients). */
+    @Override
+    public boolean isPartyLinked() {
+        return link.get() != null || !getLinkedPages().isEmpty();
+    }
+
     @Override
     public void tick() {
         if (!(this.world instanceof ServerWorld serverWorld)) return;
+        link.tick(serverWorld);
         if (tapeTicks >= 0) playTape(serverWorld);
         if (serverWorld.getTime() % CHECK_TICKS == 0) {
             refreshLinkedPages();
@@ -178,7 +190,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
 
     /**
      * What it drives now: a party, or the pages of a mini-game (whoever plays it). Server side; null party and no
-     * page: nothing (a link to an element whose party or pages are gone, or no party near).
+     * page: nothing (unlinked, or a link to an element whose party or pages are gone).
      */
     public record Driven(@Nullable PartyControllerEntity party, List<UUID> pages) {
         static final Driven NONE = new Driven(null, List.of());
@@ -199,9 +211,8 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
         if (!(this.world instanceof ServerWorld serverWorld)) return Driven.NONE;
         if (link.get() != null) return element(serverWorld, link.get(), load);
         List<UUID> pages = getLinkedPages();
-        if (!pages.isEmpty()) return new Driven(null, pages);
-        // « next » never acts on an ended party: only running ones are found
-        return new Driven(PartyControllerEntity.getClosestSteppablePartyControllerEntity(serverWorld, this.pos, RANGE, false).orElse(null), List.of());
+        // Unlinked: nothing, never the nearest party
+        return pages.isEmpty() ? Driven.NONE : new Driven(null, pages);
     }
 
     /** What the element at {@code at} belongs to (see {@link LinkedParty}). */
@@ -311,7 +322,7 @@ public class StepControllerBlockEntity extends SyncedBlockEntity implements GeoB
             hint = Text.translatable("block.steveparty.step_controller.hint."
                     + (mode == StepPulse.Mode.PREVIOUS ? "nothing" : mode.id() + ".mini_game"));
         } else {
-            hint = Text.translatable("block.steveparty.step_controller.hint.none");
+            hint = Text.translatable(isPartyLinked() ? "block.steveparty.step_controller.hint.nothing" : "block.steveparty.step_controller.hint.none");
         }
         return Text.translatable("block.steveparty.step_controller.mode", mode.label(), hint.copy().styled(style -> style.withColor(HINT_COLOR)));
     }

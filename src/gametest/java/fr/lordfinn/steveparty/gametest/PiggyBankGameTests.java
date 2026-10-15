@@ -303,7 +303,7 @@ public class PiggyBankGameTests implements SteveGameTest {
         controller.nextStep();
         PiggyBankBlockEntity bank = placeBank(context, Target.EVERYONE, 10);
         bank.partyLink().set(null);
-        context.assertTrue(!bank.isLinked(), "unlinked");
+        context.assertTrue(!bank.isPartyLinked(), "unlinked");
         context.assertTrue(!bank.activate(), "a pulse does nothing");
         context.assertEquals(nuggets(a) + nuggets(b), 0, "nobody paid");
         ChestBlockEntity chest = context.getBlockEntity(CHEST);
@@ -359,12 +359,12 @@ public class PiggyBankGameTests implements SteveGameTest {
         GlobalPos nearest = GlobalPos.create(context.getWorld().getRegistryKey(), context.getAbsolutePos(CONTROLLER));
         context.waitAndRun(45, () -> {
             context.assertEquals(bank.partyLink().get(), nearest, "linked to the nearest controller");
-            context.assertTrue(!fresh.isLinked(), "a new one stays unlinked");
+            context.assertTrue(!fresh.isPartyLinked(), "a new one stays unlinked");
             bank.partyLink().set(null);
             NbtCompound saved = bank.createNbt(registries);
             bank.readNbt(saved, registries);
             context.waitAndRun(45, () -> {
-                context.assertTrue(!bank.isLinked(), "never links itself again");
+                context.assertTrue(!bank.isPartyLinked(), "never links itself again");
                 end(context);
             });
         });

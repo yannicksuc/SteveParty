@@ -1067,7 +1067,7 @@ public class PodiumGameTests implements SteveGameTest {
     /**
      * A step controller clicked with a page is linked to it: a pulse then ends the mini-game of that page (places as
      * they stand, gains paid), not the step of the nearest party; with nobody playing the page the pulse does nothing;
-     * unlinked (a second click), it acts on the nearest party again.
+     * unlinked (a second click), it drives nothing again (never the nearest party).
      */
     @GameTest(templateName = EMPTY_STRUCTURE, batchId = "podium_party_step_link", tickLimit = 100)
     public void aLinkedStepControllerEndsTheMiniGameOfItsPage(TestContext context) {
@@ -1085,8 +1085,8 @@ public class PodiumGameTests implements SteveGameTest {
             context.setBlockState(stepPos, ModBlocks.STEP_CONTROLLER);
             stepController = context.getBlockEntity(stepPos);
             context.assertTrue(stepController.getLinkedPages().isEmpty(), "a new step controller is linked to nothing");
-            context.assertTrue(stepController.driven().party() != null && stepController.driven().party().getPartyData() == near,
-                    "not linked: the nearest party");
+            context.assertTrue(stepController.driven().party() == null && stepController.driven().session() == null,
+                    "not linked: nothing, not the nearest party");
 
             // Page in hand, a click links it, like a podium
             p1.setStackInHand(Hand.MAIN_HAND, played.page());
@@ -1131,11 +1131,11 @@ public class PodiumGameTests implements SteveGameTest {
                     try {
                         context.assertEquals(near.getStepIndex(), 0, "a pulse with no party on the page does nothing");
                         context.assertTrue(played.data().isAtEnd(), "nor to the party that played it");
-                        // A second click with the page unlinks it: the nearest party again
+                        // A second click with the page unlinks it: nothing again, never the nearest party
                         BlockPos abs = context.getAbsolutePos(stepPos);
                         context.getBlockState(stepPos).onUse(world, p1, new BlockHitResult(Vec3d.ofCenter(abs), Direction.UP, abs, false));
                         context.assertTrue(stepController.getLinkedPages().isEmpty(), "unlinked");
-                        context.assertTrue(stepController.driven().party() != null && stepController.driven().party().getPartyData() == near, "the nearest party again");
+                        context.assertTrue(stepController.driven().party() == null && !stepController.isPartyLinked(), "unlinked: nothing, not the nearest party");
                         context.setBlockState(stepPos.south(), Blocks.AIR);
                     } catch (RuntimeException e) {
                         context.removeBlock(other);
@@ -1146,7 +1146,7 @@ public class PodiumGameTests implements SteveGameTest {
                         context.setBlockState(stepPos.south(), Blocks.REDSTONE_BLOCK);
                         context.waitAndRun(4, () -> {
                             try {
-                                context.assertEquals(near.getStepIndex(), 1, "not linked: a pulse moves the nearest party one step, as before");
+                                context.assertEquals(near.getStepIndex(), 0, "not linked: a pulse does not touch the nearest party");
                             } finally {
                                 context.removeBlock(other);
                                 cleanUp(context, p1, p2);

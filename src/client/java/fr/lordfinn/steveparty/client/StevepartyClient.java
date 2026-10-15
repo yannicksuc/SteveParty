@@ -70,6 +70,7 @@ import fr.lordfinn.steveparty.client.renderer.StarSpaceRenderer;
 import fr.lordfinn.steveparty.client.board.TileInfoClient;
 import fr.lordfinn.steveparty.client.board.NestInfoClient;
 import fr.lordfinn.steveparty.client.board.PiggyBankInfoClient;
+import fr.lordfinn.steveparty.client.board.NotLinkedPanelClient;
 import fr.lordfinn.steveparty.client.screens.CartridgeScreen;
 import fr.lordfinn.steveparty.client.screens.TrichaudronScreen;
 import fr.lordfinn.steveparty.client.screens.MiniGameControllerScreen;
@@ -286,6 +287,7 @@ public class StevepartyClient implements ClientModInitializer {
         fr.lordfinn.steveparty.client.board.EndPanel.initialize();
         NestInfoClient.initialize();
         PiggyBankInfoClient.initialize();
+        NotLinkedPanelClient.initialize();
         TileOutline.initialize();
         DevClientCommands.initialize();
         StencilHammerStrikes.initialize();

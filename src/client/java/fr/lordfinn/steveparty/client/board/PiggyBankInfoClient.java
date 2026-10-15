@@ -2,13 +2,12 @@ package fr.lordfinn.steveparty.client.board;
 
 import fr.lordfinn.steveparty.blocks.custom.CartridgeTransfers;
 import fr.lordfinn.steveparty.blocks.custom.PiggyBankBlockEntity;
-import fr.lordfinn.steveparty.client.gui.ConsolePaint;
 import fr.lordfinn.steveparty.client.gui.FloatingInfo;
+import fr.lordfinn.steveparty.client.gui.NotLinkedMark;
 import fr.lordfinn.steveparty.client.gui.HudDepth;
 import fr.lordfinn.steveparty.client.gui.ToolHud;
 import fr.lordfinn.steveparty.client.gui.UiText;
 import fr.lordfinn.steveparty.components.InventoryComponent;
-import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.cartridges.InventoryCartridgeItem;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -19,8 +18,6 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.model.json.ModelTransformationMode;
@@ -32,7 +29,6 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,9 +67,6 @@ public final class PiggyBankInfoClient {
     private record Shown(List<Cell> cells, boolean oneOf, int heads) {
     }
 
-    private static final ItemStack BRUSH = new ItemStack(ModItems.TILE_LINKER_BRUSH);
-    /** A pixel of the red cross on a panel's icon (an icon pixel), and the whole cross (text pixels). */
-    private static final float CROSS_PIXEL = ICON / 16f, CROSS = CROSS_PIXEL * 8;
 
     private record CardKey(BlockPos pos) {
     }
@@ -99,7 +92,7 @@ public final class PiggyBankInfoClient {
     private static @Nullable Shown shown(MinecraftClient client, BlockPos pos) {
         if (client.world == null || !(client.world.getBlockEntity(pos) instanceof PiggyBankBlockEntity bank)) return null;
         List<Cell> cells = new ArrayList<>();
-        if (!bank.isLinked()) cells.add(new Cell(BRUSH, "", 0, true));
+        if (!bank.isPartyLinked()) cells.add(new Cell(NotLinkedMark.BRUSH, "", 0, true));
         cells.add(new Cell(bank.getTarget().getIcon(), "", 0));
         int heads = cells.size();
         ItemStack cartridge = bank.getStack(0);
@@ -172,7 +165,7 @@ public final class PiggyBankInfoClient {
                     consumers, client.world, 0);
             matrices.pop();
             // On the icon's bottom-right corner (the icon spans y - 1 to y + 8)
-            if (cell.crossed()) cross(matrices, consumers, x + ICON - CROSS, y + 8 - CROSS);
+            if (cell.crossed()) NotLinkedMark.worldCross(matrices, consumers, x + ICON, y + 8, ICON / 16f, CROSS_Z);
             if (!cell.text().isEmpty()) {
                 font.draw(cell.text(), x + ICON + ICON_GAP, y, cell.color(), false, matrices.peek().getPositionMatrix(),
                         consumers, TextRenderer.TextLayerType.POLYGON_OFFSET, 0, LIGHT);
@@ -190,30 +183,6 @@ public final class PiggyBankInfoClient {
         }
         consumers.draw();
         matrices.pop();
-    }
-
-    /**
-     * The red cross ({@link ConsolePaint#NOT_LINKED}) with its top-left corner at (x, y) (text pixels), in front of the
-     * icon under it: opaque pixels, one batch drawn at once.
-     */
-    private static void cross(MatrixStack matrices, VertexConsumerProvider.Immediate consumers, float x, float y) {
-        float pixel = CROSS_PIXEL;
-        RenderLayer layer = RenderLayer.getTextBackground();
-        VertexConsumer consumer = consumers.getBuffer(layer);
-        Matrix4f matrix = matrices.peek().getPositionMatrix();
-        String[] rows = ConsolePaint.NOT_LINKED;
-        for (int row = 0; row < rows.length; row++) {
-            for (int column = 0; column < rows[row].length(); column++) {
-                Integer argb = ConsolePaint.NOT_LINKED_COLOURS.get(rows[row].charAt(column));
-                if (argb == null) continue;
-                float x0 = x + column * pixel, y0 = y + row * pixel;
-                consumer.vertex(matrix, x0, y0, CROSS_Z).color(argb).light(LIGHT);
-                consumer.vertex(matrix, x0, y0 + pixel, CROSS_Z).color(argb).light(LIGHT);
-                consumer.vertex(matrix, x0 + pixel, y0 + pixel, CROSS_Z).color(argb).light(LIGHT);
-                consumer.vertex(matrix, x0 + pixel, y0, CROSS_Z).color(argb).light(LIGHT);
-            }
-        }
-        consumers.draw(layer);
     }
 
     /** The cross's depth: in front of the flat icon under it (label space: +z toward the camera). */
@@ -242,7 +211,7 @@ public final class PiggyBankInfoClient {
                 card.getMatrices().translate(ix, y - 1, 0);
                 card.getMatrices().scale(ICON / 16f, ICON / 16f, 1);
                 HudDepth.item(card, () -> card.drawItem(cell.icon(), 0, 0));
-                if (cell.crossed()) HudDepth.onTop(card, () -> ConsolePaint.notLinked(card, 16 - ConsolePaint.NOT_LINKED.length, 16 - ConsolePaint.NOT_LINKED.length));
+                if (cell.crossed()) HudDepth.onTop(card, () -> NotLinkedMark.crossOnIcon(card, 0, 0));
                 card.getMatrices().pop();
                 if (!cell.text().isEmpty()) {
                     HudDepth.onTop(card, () -> UiText.line(card, font, cell.text(), ix + ICON + ICON_GAP, y, font.getWidth(cell.text()),

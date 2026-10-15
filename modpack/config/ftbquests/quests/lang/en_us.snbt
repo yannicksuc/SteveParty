@@ -131,7 +131,7 @@
 	quest.030135F1CA2F65E1.quest_desc: [
 		"Right-click it with the Wrench: every moment it can listen to, by family (party, turns, coins and stars, events, mini-games). It pulses then, and a comparator reads a value (die result, rank...)."
 		"Wait mode: the party freezes until the antenna gets a signal."
-		"Link it with the Tile Linker Brush to any part of the game (the Party Controller, a space...): it listens to that party; not linked, it hears nothing."
+		"Link it with the Tile Linker Brush to any part of the game (the Party Controller, a space...): it listens to that party; not linked, it hears nothing (its screen and bubble show the brush crossed out in red)."
 	]
 	quest.030135F1CA2F65E1.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.030135F1CA2F65E1.title: "Party Antenna"
@@ -308,7 +308,7 @@
 		"A tape deck. Right-click a button on top: its mode. Previous · Replay · Next."
 		"Next + a pulse: skips what the party waits for (a turn not rolled, an antenna, the practice round); in a mini-game, ends it with the podiums' places."
 		"Replay + a pulse: the turn is undone and played again, or the round restarts. Previous: back to the turn before."
-		"Link it to any part of a game with the Tile Linker Brush; otherwise it drives the nearest party (64 blocks)."
+		"Link it to any part of a game with the Tile Linker Brush: it drives that party; not linked, it does nothing (looked at, it shows the brush crossed out in red)."
 	]
 	quest.101F5B0C2C547670.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.101F5B0C2C547670.title: "Party Rewinder"

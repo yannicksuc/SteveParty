@@ -645,19 +645,19 @@ q("step", 4, -1.5, I("step_controller"), deps=["controller"], rewards=T2(),
   desc=(["A tape deck. Right-click a button on top: its mode. Previous · Replay · Next.",
          "Next + a pulse: skips what the party waits for (a turn not rolled, an antenna, the practice round); in a mini-game, ends it with the podiums' places.",
          "Replay + a pulse: the turn is undone and played again, or the round restarts. Previous: back to the turn before.",
-         "Link it to any part of a game with the Tile Linker Brush; otherwise it drives the nearest party (64 blocks)."],
+         "Link it to any part of a game with the Tile Linker Brush: it drives that party; not linked, it does nothing (looked at, it shows the brush crossed out in red)."],
         ["Un magnétophone. Clic droit sur un bouton du dessus : son mode. Précédent · Rejouer · Suivant.",
          "Suivant + une impulsion : passe ce que la partie attend (tour pas lancé, antenne, manche de chauffe) ; en mini-jeu, le termine avec les places des podiums.",
          "Rejouer + une impulsion : le tour est annulé et rejoué, ou la manche recommence. Précédent : retour au tour d'avant.",
-         "Lie-le au Pinceau lieur à un élément d'une partie ; sinon il pilote la partie la plus proche (64 blocs)."]))
+         "Lie-le au Pinceau lieur à un élément d'une partie : il pilote cette partie ; pas lié, il ne fait rien (regardé, il montre le pinceau barré de rouge)."]))
 
 q("bell", 4, -4, I("party_bell"), deps=["controller"], rewards=T2(),
   desc=(["Right-click it with the Wrench: every moment it can listen to, by family (party, turns, coins and stars, events, mini-games). It pulses then, and a comparator reads a value (die result, rank...).",
          "Wait mode: the party freezes until the antenna gets a signal.",
-         "Link it with the Tile Linker Brush to any part of the game (the Party Controller, a space...): it listens to that party; not linked, it hears nothing."],
+         "Link it with the Tile Linker Brush to any part of the game (the Party Controller, a space...): it listens to that party; not linked, it hears nothing (its screen and bubble show the brush crossed out in red)."],
         ["Clic droit avec la Clé à molette : tous les moments qu'elle peut écouter, par famille (partie, tours, pièces et étoiles, évènements, mini-jeux). Elle émet alors une impulsion, et un comparateur lit une valeur (résultat du dé, rang...).",
          "Mode attente : la partie se fige jusqu'à ce qu'elle reçoive un signal.",
-         "Lie-la au Pinceau lieur à un élément d'une partie (le Contrôleur de Party, une case...) : elle écoute cette partie ; pas liée, elle n'entend rien."]))
+         "Lie-la au Pinceau lieur à un élément d'une partie (le Contrôleur de Party, une case...) : elle écoute cette partie ; pas liée, elle n'entend rien (son écran et sa bulle montrent le pinceau barré de rouge)."]))
 
 q("piggy", 4, -2.75, I("piggy_bank"), deps=["controller", "board.inventory"], rewards=T2(),
   desc=(["A ceramic pig with an Inventory Cartridge. Each pulse gives (or takes) its items: player of the turn, mini-game winners, everyone or the nearest.",

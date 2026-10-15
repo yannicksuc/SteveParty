@@ -17,6 +17,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import fr.lordfinn.steveparty.client.gui.NotLinkedMark;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -26,7 +27,9 @@ import java.util.List;
 /**
  * The Party Antenna's screen (right-click with the Wrench): every moment at once, one row per family (its colour on
  * the left and in its buttons, the moment's item in each), one click chooses. Under them: the last moment heard, then
- * the mode (pulse / wait), the value filter and a test pulse. No help text: one tooltip per control.
+ * the mode (pulse / wait), the value filter and a test pulse. No help text: one tooltip per control. Linked to no party
+ * (it hears nothing then): the Tile Linker Brush crossed out in red at the end of the last-heard row, where its
+ * hourglass shows when it holds a party ({@link NotLinkedMark}), what it means on hover.
  * <p>
  * It reads the antenna the client already has (moment in the block state, the rest in the synced block entity) and
  * sends every change at once ({@link AntennaSettingsPayload}). Buttons are pressed in while held: the face darkens and
@@ -193,7 +196,13 @@ public class AntennaScreen extends Screen {
         drawTooltip(context, antenna, current, hovered, hoveredControl, mouseX, mouseY, canWait, testable);
     }
 
+    /** The corner of the last-heard row's right end: its hourglass while it holds a party, its crossed brush unlinked. */
+    private int heardEndX() {
+        return left + W - 8 - 16;
+    }
+
     private void drawHeard(DrawContext context, PartyBellBlockEntity antenna, PartyMoment current) {
+        if (!antenna.isPartyLinked()) NotLinkedMark.screen(context, heardEndX(), top + HEARD_Y);
         if (antenna.isHolding()) {
             int x = left + W - 8 - 16;
             AntennaIcons.cell(context, AntennaIcons.WAIT, x, top + HEARD_Y);
@@ -241,6 +250,8 @@ public class AntennaScreen extends Screen {
                 default -> {
                 }
             }
+        } else if (!antenna.isPartyLinked() && NotLinkedMark.hovered(mouseX, mouseY, heardEndX(), top + HEARD_Y)) {
+            lines.add(NotLinkedMark.tooltip(antenna));
         } else if (antenna.isHolding() && mouseX >= left + W - 24 && mouseX < left + W - 8 && mouseY >= top + HEARD_Y && mouseY < top + HEARD_Y + 16) {
             lines.add(Text.translatable("gui.steveparty.antenna.holding"));
         } else if (antenna.getHeardAt() < 0 && mouseX >= left + 8 && mouseX < left + 24

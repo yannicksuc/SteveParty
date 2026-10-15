@@ -151,6 +151,18 @@ public class PartyBellBlockEntity extends SyncedBlockEntity implements GeoBlockE
         return link;
     }
 
+    /** It shows its crossed brush itself, unlinked: in its screen and its Wrench-in-hand bubble (its receiver stays dark). */
+    @Override
+    public boolean showsNotLinkedItself() {
+        return true;
+    }
+
+    /** « l'Antenne »: its crossed brush's tooltip in the feminine. */
+    @Override
+    public String notLinkedKey() {
+        return NOT_LINKED_FEMININE_KEY;
+    }
+
     @Override
     public void tick() {
         if (this.world instanceof ServerWorld serverWorld) {
