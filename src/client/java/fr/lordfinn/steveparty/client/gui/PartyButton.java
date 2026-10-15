@@ -27,6 +27,8 @@ public class PartyButton extends PressableWidget {
     private Style style = Style.NORMAL;
     private boolean selected;
     private Content content;
+    /** Its content stays in place when it is pushed in (only its face changes): a row of symbols. */
+    private boolean steady;
 
     public PartyButton(int x, int y, int width, int height, Text message, Consumer<PartyButton> onPress) {
         super(x, y, width, height, message);
@@ -35,6 +37,12 @@ public class PartyButton extends PressableWidget {
 
     public PartyButton style(Style style) {
         this.style = style;
+        return this;
+    }
+
+    /** Its content does not move when it is pushed in (selected or held): only its face changes. */
+    public PartyButton steady() {
+        this.steady = true;
         return this;
     }
 
@@ -86,7 +94,7 @@ public class PartyButton extends PressableWidget {
                 : style == Style.PRIMARY ? 0xFFFFFFFF
                 : 0xFF2E2E2E;
         TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
-        int centerX = x + w / 2, centerY = y + h / 2 + (pressedIn ? 1 : 0);
+        int centerX = x + w / 2, centerY = y + h / 2 + (pressedIn && !steady ? 1 : 0);
         if (content != null) {
             content.draw(context, textRenderer, centerX, centerY, textColor);
         } else {
