@@ -5,6 +5,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
 import fr.lordfinn.steveparty.items.ModItems;
+import fr.lordfinn.steveparty.items.custom.DefaultDiceItem;
 import net.minecraft.component.ComponentType;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.Item;
@@ -69,12 +70,12 @@ public record DiceFacesComponent(List<DiceFace> faces) {
     }
 
     /**
-     * Rolls the die: one of the forged faces when the stack carries this component, otherwise the classic
-     * uniform {@link DiceEntity#MIN}..{@link DiceEntity#MAX} roll (plain dice keep working as before).
+     * Rolls the die: one of the forged faces when the stack carries this component, otherwise the uniform
+     * {@link DiceEntity#MIN}..{@link DefaultDiceItem#plainMax} roll (1 to 10, 1 to 6 for the Wooden Die).
      */
     public static int rollFace(@Nullable ItemStack stack, Random random) {
         DiceFace face = rollDiceFace(stack, random);
-        return face == null ? random.nextBetween(DiceEntity.MIN, DiceEntity.MAX) : face.value();
+        return face == null ? random.nextBetween(DiceEntity.MIN, DefaultDiceItem.plainMax(stack)) : face.value();
     }
 
     /** Same as {@link #rollFace(ItemStack, Random)} but also tells which face was rolled (null for a plain die). */
@@ -89,19 +90,19 @@ public record DiceFacesComponent(List<DiceFace> faces) {
         return component.faces().getLast();
     }
 
-    /** The faces a die rolls: its forged faces, or {@link DiceEntity#MIN}..{@link DiceEntity#MAX} for a plain die. */
+    /** The faces a die rolls: its forged faces, or {@link DiceEntity#MIN}..{@link DefaultDiceItem#plainMax} for a plain die. */
     public static List<DiceFace> facesOf(@Nullable ItemStack stack) {
         DiceFacesComponent component = stack == null ? null : stack.get(TYPE);
         if (component != null && !component.faces().isEmpty()) return component.faces();
         List<DiceFace> faces = new ArrayList<>();
-        for (int value = DiceEntity.MIN; value <= DiceEntity.MAX; value++) faces.add(new DiceFace(Kind.NORMAL, value));
+        for (int value = DiceEntity.MIN; value <= DefaultDiceItem.plainMax(stack); value++) faces.add(new DiceFace(Kind.NORMAL, value));
         return faces;
     }
 
     /** Rolls the die: one of its faces by weight (a plain die: a number of {@link #facesOf}). Never null. */
     public static DiceFace roll(@Nullable ItemStack stack, Random random) {
         DiceFace face = rollDiceFace(stack, random);
-        return face != null ? face : new DiceFace(Kind.NORMAL, random.nextBetween(DiceEntity.MIN, DiceEntity.MAX));
+        return face != null ? face : new DiceFace(Kind.NORMAL, random.nextBetween(DiceEntity.MIN, DefaultDiceItem.plainMax(stack)));
     }
 
     /** Sum of the face weights (at least 1). */
@@ -149,6 +150,13 @@ public record DiceFacesComponent(List<DiceFace> faces) {
             }
         }
         return Text.translatableWithFallback("tooltip.steveparty.dice_faces", "Faces: %s", list)
+                .styled(style -> style.withItalic(false).withColor(Formatting.GRAY));
+    }
+
+    /** The faces line of a plain die, e.g. "Faces: 1 to 6". */
+    public static Text describeRange(int min, int max) {
+        Text range = Text.translatable("tooltip.steveparty.dice.range", min, max).formatted(Formatting.WHITE);
+        return Text.translatableWithFallback("tooltip.steveparty.dice_faces", "Faces: %s", range)
                 .styled(style -> style.withItalic(false).withColor(Formatting.GRAY));
     }
 

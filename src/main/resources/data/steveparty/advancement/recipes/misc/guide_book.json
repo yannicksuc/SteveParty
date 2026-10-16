@@ -1,0 +1,25 @@
+{
+  "fabric:load_conditions": [
+    {
+      "condition": "fabric:all_mods_loaded",
+      "values": ["modonomicon"]
+    }
+  ],
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_plastic_pellets": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [ { "items": "steveparty:plastic_pellets" } ] }
+    },
+    "has_book": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [ { "items": "minecraft:book" } ] }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": { "recipe": "steveparty:guide_book" }
+    }
+  },
+  "requirements": [ [ "has_plastic_pellets", "has_book", "has_the_recipe" ] ],
+  "rewards": { "recipes": [ "steveparty:guide_book" ] }
+}

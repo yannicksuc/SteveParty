@@ -68,6 +68,8 @@ public class ModItems {
     public static final Item TOKENIZER_WAND = register("tokenizer_wand", TokenizerWandItem::new, new Item.Settings().maxCount(1));
     public static final Item PLUNGER = register("plunger", PlungerItem::new);
     public static final Item DEFAULT_DICE = register("default_dice", DefaultDiceItem::new);
+    /** The first die (1 to 6), carved from planks; no faces nor modules. */
+    public static final Item WOODEN_DICE = register("wooden_dice", WoodenDiceItem::new);
     public static final Item TRIPLE_DICE = register("triple_dice", TripleDiceItem::new);
     /** The dice faces: the blank one first ({@link #blankDiceFace}), then kind by kind. */
     public static final List<Item> DICE_FACES = new ArrayList<>();

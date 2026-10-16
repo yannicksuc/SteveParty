@@ -11,12 +11,12 @@
         ]
       }
     },
-    "has_party_star": {
+    "has_lapis_lazuli": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "steveparty:party_star"
+            "items": "minecraft:lapis_lazuli"
           }
         ]
       }
@@ -31,7 +31,7 @@
   "requirements": [
     [
       "has_lapis_block",
-      "has_party_star",
+      "has_lapis_lazuli",
       "has_the_recipe"
     ]
   ],

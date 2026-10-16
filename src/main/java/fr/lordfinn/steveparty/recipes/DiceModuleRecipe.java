@@ -91,7 +91,7 @@ public class DiceModuleRecipe implements CraftingRecipe {
             DiceModule module = DiceModules.fromItem(stack);
             if (module != null) {
                 added.merge(module, 1, Integer::sum);
-            } else if (stack.getItem() instanceof DefaultDiceItem && die.isEmpty()) {
+            } else if (stack.getItem() instanceof DefaultDiceItem item && item.takesModules() && die.isEmpty()) {
                 die = stack;
             } else {
                 return null;

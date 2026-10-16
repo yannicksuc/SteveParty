@@ -423,12 +423,12 @@ chapter("pawns", "board_game", "steveparty:tokenizer_wand",
          ["N'importe quelle créature devient un pion avec la Baguette de pions."]))
 
 q("crystal_ball", 0, 0, I("lapis_crystal_ball"), deps=["welcome.done"], rewards=T2(), size=1.25,
-  desc=(["A Party Star in 4 lapis blocks (the star: see Mulas and Stars). The head of the Tokenizer Wand."],
-        ["Une Party Star entre 4 blocs de lapis-lazuli (l'étoile : voir Mulas et étoiles). La tête de la Baguette de pions."]))
+  desc=(["A glass block in 4 lapis blocks. The head of the Tokenizer Wand."],
+        ["Un bloc de verre entre 4 blocs de lapis-lazuli. La tête de la Baguette de pions."]))
 
 q("wand", 2, 0, I("tokenizer_wand"), deps=["crystal_ball"], rewards=T3(),
-  desc=(["Lapis crystal ball, gold block and blaze rod, in a column. A golden wand with a lapis orb."],
-        ["Boule de cristal en lapis, bloc d'or et bâton de Blaze, en colonne. Une baguette dorée à orbe de lapis."]))
+  desc=(["Lapis crystal ball on two gold ingots, in a diagonal. A golden wand with a lapis orb."],
+        ["Boule de cristal en lapis sur deux lingots d'or, en diagonale. Une baguette dorée à orbe de lapis."]))
 
 q("pionificus", 4, 0, C(), deps=["wand"], rewards=T2(), icon="steveparty:tokenizer_wand",
   title=("Pionificus!", "Pionificus !"),
@@ -479,11 +479,15 @@ chapter("dice", "board_game", "steveparty:default_dice",
         (["Roll, move, and engrave your own faces."],
          ["Lance, avance, et grave tes propres faces."]))
 
+q("wooden_dice", 2.75, -4.5, I("wooden_dice"), deps=["welcome.done"], rewards=T1(),
+  desc=(["Four planks around a coal or charcoal. Rolls 1 to 6. Also found in village chests."],
+        ["Quatre planches autour d'un charbon (ou charbon de bois). Donne 1 à 6. Se trouve aussi dans les coffres des villages."]))
+
 q("default_dice", 4.5, -4, I("default_dice", how="own"), deps=["welcome.done"], rewards=[XP(15), IT("default_dice", 1)], size=1.25,
   desc=(["Rolls 1 to 10. The first two come with the Tile quest; more come out of the Dice Forge."],
         ["Donne 1 à 10. Les deux premiers viennent avec la quête Tuile ; les suivants sortent de la Forge à dés."]))
 
-q("roll", 6.25, -3.25, C(), deps=["default_dice"], rewards=T1(), icon="steveparty:default_dice",
+q("roll", 6.25, -3.25, C(), deps=["wooden_dice", "default_dice"], dep_req="one_completed", rewards=T1(), icon="steveparty:default_dice",
   title=("Roll it!", "Lance-le !"),
   desc=(["Right-click: the die flies over the nearest mob (sneak: the nearest player) and spins. Hit it to stop it."],
         ["Clic droit : le dé part au-dessus de la créature la plus proche (accroupi : du joueur le plus proche) et tourne. Frappe-le pour l'arrêter."]))
@@ -1053,9 +1057,9 @@ q("frag_block", 10, 6, I("blue_star_fragments_block"), deps=["frag_blue"], rewar
 q("power_star", 10, -1.75, I("party_star"), deps=["frag_blue", "frag_green", "frag_yellow", "frag_red", "frag_purple"],
   rewards=[XP(100), COINS(5)], shape="hexagon", size=1.25,
   desc=(["One fragment each of blue, green, yellow, red and purple (or 5 black ones).",
-         "The default Star of a party. It also goes into the Star Cartridge, the Lapis Crystal Ball, the Dice Forge and the iron and golden mini-game pipes."],
+         "The default Star of a party. It also goes into the Star Cartridge, the Dice Forge and the iron and golden mini-game pipes."],
         ["Un fragment de chaque : bleu, vert, jaune, rouge et violet (ou 5 noirs).",
-         "L'Étoile par défaut d'une partie. Elle entre aussi dans la Cartouche Étoile, la Boule de cristal en lapis, la Forge à dés et les tuyaux de mini-jeu en fer et en or."]))
+         "L'Étoile par défaut d'une partie. Elle entre aussi dans la Cartouche Étoile, la Forge à dés et les tuyaux de mini-jeu en fer et en or."]))
 
 q("luck", 4, -0.25, A("stars/luck_potion"), deps=["burst"], rewards=T1(), optional=True, icon="minecraft:potion",
   title=("Potion of Luck", "Potion de chance"),

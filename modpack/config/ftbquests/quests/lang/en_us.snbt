@@ -364,7 +364,7 @@
 	]
 	quest.137ABC52300C1CE9.title: "Your own die"
 	quest.13E6F42BB1F3D4AC.quest_desc: [
-		"A Party Star in 4 lapis blocks (the star: see Mulas and Stars). The head of the Tokenizer Wand."
+		"A glass block in 4 lapis blocks. The head of the Tokenizer Wand."
 	]
 	quest.13E6F42BB1F3D4AC.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.13E6F42BB1F3D4AC.title: "Lapis Crystal Ball"
@@ -611,6 +611,11 @@
 		"Squashed, planted, stacked and put on the board."
 	]
 	quest.29342BD8BA7FCED5.title: "Acorn keeper"
+	quest.29EFC1F34E182343.quest_desc: [
+		"Four planks around a coal or charcoal. Rolls 1 to 6. Also found in village chests."
+	]
+	quest.29EFC1F34E182343.quest_subtitle: "Craft it (owned ones don't count)"
+	quest.29EFC1F34E182343.title: "Wooden Die"
 	quest.2AB220E13F0C50C3.quest_desc: [
 		"Throw an acorn within 12 blocks of it: it forgets everything, even its anger, and plays with it for 30 s to a minute."
 	]
@@ -635,7 +640,7 @@
 	quest.2BAA43480CA56926.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.2BAA43480CA56926.title: "Goal Pole"
 	quest.2BD1848C751D2C08.quest_desc: [
-		"Lapis crystal ball, gold block and blaze rod, in a column. A golden wand with a lapis orb."
+		"Lapis crystal ball on two gold ingots, in a diagonal. A golden wand with a lapis orb."
 	]
 	quest.2BD1848C751D2C08.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.2BD1848C751D2C08.title: "Tokenizer Wand"
@@ -858,7 +863,7 @@
 	quest.48EDC9CAA41959B9.title: "Purple Star Fragment"
 	quest.49297133DC9D18C2.quest_desc: [
 		"One fragment each of blue, green, yellow, red and purple (or 5 black ones)."
-		"The default Star of a party. It also goes into the Star Cartridge, the Lapis Crystal Ball, the Dice Forge and the iron and golden mini-game pipes."
+		"The default Star of a party. It also goes into the Star Cartridge, the Dice Forge and the iron and golden mini-game pipes."
 	]
 	quest.49297133DC9D18C2.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.49297133DC9D18C2.title: "Party Star"

@@ -1,5 +1,8 @@
 package fr.lordfinn.steveparty.gametest;
 
+import fr.lordfinn.steveparty.recipes.DiceModuleRecipe;
+import fr.lordfinn.steveparty.items.custom.WoodenDiceItem;
+import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.gametest.kit.TestCleanup;
 import fr.lordfinn.steveparty.dice.DiceModules;
@@ -483,6 +486,60 @@ public class DiceGameTests implements SteveGameTest {
         player.getMainHandStack().use(context.getWorld(), player, Hand.MAIN_HAND);
         context.assertEquals(diceOf(context, player).getFirst().getTarget().orElse(null), player.getUuid(), "above his own head, not a pig");
         closer.discard();
+        context.complete();
+    }
+
+    // ---------------------------------------------------------------- the Wooden Die
+
+    /** The Wooden Die rolls 1 to 6, every one of them, never more; the Simple Die keeps its 1 to 10. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aWoodenDieOnlyRollsOneToSix(TestContext context) {
+        ItemStack wooden = new ItemStack(ModItems.WOODEN_DICE);
+        net.minecraft.util.math.random.Random random = net.minecraft.util.math.random.Random.create(19);
+        java.util.Set<Integer> seen = new java.util.TreeSet<>();
+        for (int i = 0; i < 600; i++) {
+            int value = DiceFacesComponent.rollFace(wooden, random);
+            context.assertTrue(value >= 1 && value <= WoodenDiceItem.MAX, "a wooden die rolled " + value);
+            seen.add(value);
+            int face = DiceFacesComponent.roll(wooden, random).value();
+            context.assertTrue(face >= 1 && face <= WoodenDiceItem.MAX, "a wooden die's face " + face);
+        }
+        context.assertEquals(seen.size(), WoodenDiceItem.MAX, "every number from 1 to 6: " + seen);
+        context.assertEquals(DiceFacesComponent.facesOf(wooden).size(), WoodenDiceItem.MAX, "its faces");
+        context.assertEquals(DiceFacesComponent.facesOf(new ItemStack(ModItems.DEFAULT_DICE)).size(), DiceEntity.MAX,
+                "the Simple Die keeps 1 to 10");
+        context.complete();
+    }
+
+    /** Thrown, a Wooden Die stops on 1 to 6 (the roll goes through the die it was thrown from). */
+    @GameTest(templateName = EMPTY_STRUCTURE, tickLimit = 40)
+    public void aThrownWoodenDieStopsOnOneToSix(TestContext context) {
+        ServerWorld world = context.getWorld();
+        ServerPlayerEntity player = playerNextTo(context, false);
+        try {
+            for (int i = 0; i < 30; i++) {
+                DiceEntity dice = spawnDice(context);
+                dice.setItemReference(new ItemStack(ModItems.WOODEN_DICE));
+                dice.damage(world.getDamageSources().playerAttack(player), 1F);
+                context.assertFalse(dice.isRolling(), "a hit stops the die");
+                int value = dice.getRollValue();
+                context.assertTrue(value >= 1 && value <= WoodenDiceItem.MAX, "a thrown wooden die stopped on " + value);
+                dice.discard();
+            }
+        } finally {
+            TestPlayers.remove(context, player);
+        }
+        context.complete();
+    }
+
+    /** No module on a Wooden Die: modules belong to the Simple Die and the better ones. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void aWoodenDieTakesNoModule(TestContext context) {
+        ItemStack module = new ItemStack(ModItems.DICE_MODULES.getFirst());
+        CraftingRecipeInput input = CraftingRecipeInput.create(2, 1, List.of(new ItemStack(ModItems.WOODEN_DICE), module));
+        context.assertTrue(DiceModuleRecipe.result(input) == null, "no module on a wooden die");
+        CraftingRecipeInput simple = CraftingRecipeInput.create(2, 1, List.of(new ItemStack(ModItems.DEFAULT_DICE), module));
+        context.assertTrue(DiceModuleRecipe.result(simple) != null, "a module still goes on a Simple Die");
         context.complete();
     }
 }

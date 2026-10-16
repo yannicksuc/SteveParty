@@ -4,6 +4,8 @@ import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.components.DiceFacesComponent;
 import fr.lordfinn.steveparty.components.DiceFacesComponent.Kind;
 import fr.lordfinn.steveparty.entities.custom.DiceEntity;
+import fr.lordfinn.steveparty.items.custom.DefaultDiceItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.entity.EntityRendererFactory;
 import net.minecraft.util.Identifier;
@@ -36,15 +38,16 @@ public class DiceEntityRenderer extends GeoEntityRenderer<DiceEntity> {
             long worldTicks = client.world != null ? client.world.getTime() : 0;
             // Per-dice fake face, changing every 4 ticks (deterministic: no state shared between dice): one of the die's
             // own faces (by weight), or 1 to 10 for a plain die
-            DiceFacesComponent forged = dice.getDieStack().get(DiceFacesComponent.TYPE);
+            ItemStack die = dice.getDieStack();
+            DiceFacesComponent forged = die.get(DiceFacesComponent.TYPE);
             List<DiceFacesComponent.DiceFace> faces = forged == null ? List.of() : forged.faces();
             if (!faces.isEmpty()) {
                 DiceFacesComponent.DiceFace face = flickerFace(dice, worldTicks, faces);
-                return getTexture(face.kind(), face.value());
+                return getTexture(die, face.kind(), face.value());
             }
-            return getTexture(Kind.NORMAL, fakeValue(dice, worldTicks));
+            return getTexture(die, Kind.NORMAL, fakeValue(dice, worldTicks, DefaultDiceItem.plainMax(die)));
         }
-        return getTexture(dice.getRollKind(), dice.getRollValue());
+        return getTexture(dice.getDieStack(), dice.getRollKind(), dice.getRollValue());
     }
 
     /** One of {@code faces} by weight, picked like {@link #fakeValue}. */
@@ -60,9 +63,16 @@ public class DiceEntityRenderer extends GeoEntityRenderer<DiceEntity> {
         return faces.getFirst();
     }
 
-    private static int fakeValue(DiceEntity dice, long worldTicks) {
+    private static int fakeValue(DiceEntity dice, long worldTicks, int max) {
         long hash = MathHelper.hashCode(dice.getId(), (int) (worldTicks >> 2), 0x5EED);
-        return (int) Math.floorMod(hash ^ (hash >>> 32), (long) (DiceEntity.MAX - DiceEntity.MIN + 1)) + DiceEntity.MIN;
+        return (int) Math.floorMod(hash ^ (hash >>> 32), (long) (max - DiceEntity.MIN + 1)) + DiceEntity.MIN;
+    }
+
+    /** A face as {@code die} paints it: its plain numbers in its own material (the Wooden Die's in wood). */
+    public static Identifier getTexture(ItemStack die, Kind kind, int value) {
+        if (kind != Kind.NORMAL) return getTexture(kind, value);
+        String name = DefaultDiceItem.plainFaceTexture(die) + value;
+        return TEXTURES.computeIfAbsent(name, n -> Steveparty.id("textures/entity/dice/" + n + ".png"));
     }
 
     /** One texture per face: textures/entity/dice/&lt;kind&gt;_dice&lt;value&gt;.png (the swap and blank faces have no value). */

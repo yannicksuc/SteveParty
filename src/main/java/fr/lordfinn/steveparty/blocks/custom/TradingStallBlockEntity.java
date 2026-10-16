@@ -4,6 +4,7 @@ import fr.lordfinn.steveparty.blocks.SyncedBlockEntity;
 import fr.lordfinn.steveparty.blocks.ModBlockEntities;
 import fr.lordfinn.steveparty.items.ModItems;
 import fr.lordfinn.steveparty.items.custom.DefaultDiceItem;
+import fr.lordfinn.steveparty.items.custom.WoodenDiceItem;
 import fr.lordfinn.steveparty.items.custom.DoubleDiceItem;
 import fr.lordfinn.steveparty.items.custom.TripleDiceItem;
 import fr.lordfinn.steveparty.items.custom.PowerUpItem;
@@ -143,13 +144,14 @@ public class TradingStallBlockEntity extends SyncedBlockEntity implements NamedS
 
     /**
      * What {@code sold} costs on a stall whose two price slots are left empty, in the mod's coins: a power-up its
-     * default price, a die by how many it throws (one 5, double 10, triple 20); empty for anything else (no offer).
+     * default price, a die by how many it throws (one 5, double 10, triple 20; the Wooden Die 2); empty for anything else (no offer).
      */
     public static ItemStack basePrice(ItemStack sold) {
         int coins = 0;
         if (sold.getItem() instanceof PowerUpItem powerUp) coins = powerUp.powerUp().defaultPrice();
         else if (sold.getItem() instanceof TripleDiceItem) coins = 20;
         else if (sold.getItem() instanceof DoubleDiceItem) coins = 10;
+        else if (sold.getItem() instanceof WoodenDiceItem) coins = 2;
         else if (sold.getItem() instanceof DefaultDiceItem) coins = 5;
         return coins <= 0 ? ItemStack.EMPTY : new ItemStack(ModItems.COIN, coins);
     }

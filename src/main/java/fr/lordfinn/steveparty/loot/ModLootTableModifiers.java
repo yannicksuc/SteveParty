@@ -29,6 +29,8 @@ import java.util.Map;
  * <p>
  * Stencils cut to a random pattern of the library ({@link fr.lordfinn.steveparty.stencil.StencilPatterns}) are
  * found in the chests of many structures ({@link #STENCIL_CHESTS}).
+ * <p>
+ * The Wooden Die is an uncommon find in village chests ({@link #WOODEN_DIE_CHESTS}): a first die before crafting one.
  */
 public final class ModLootTableModifiers {
     public static final RegistryKey<Enchantment> GAME_MASTER = RegistryKey.of(RegistryKeys.ENCHANTMENT, Steveparty.id("game_master"));
@@ -100,6 +102,19 @@ public final class ModLootTableModifiers {
             // The End
             Map.entry(LootTables.END_CITY_TREASURE_CHEST, 0.5F));
 
+    /** Village chest → chance to find a Wooden Die in it (uncommon: about one house in eight). */
+    public static final Map<RegistryKey<LootTable>, Float> WOODEN_DIE_CHESTS = Map.ofEntries(
+            Map.entry(LootTables.VILLAGE_PLAINS_CHEST, 0.12F),
+            Map.entry(LootTables.VILLAGE_DESERT_HOUSE_CHEST, 0.12F),
+            Map.entry(LootTables.VILLAGE_SAVANNA_HOUSE_CHEST, 0.12F),
+            Map.entry(LootTables.VILLAGE_SNOWY_HOUSE_CHEST, 0.12F),
+            Map.entry(LootTables.VILLAGE_TAIGA_HOUSE_CHEST, 0.12F),
+            Map.entry(LootTables.VILLAGE_CARTOGRAPHER_CHEST, 0.15F),
+            Map.entry(LootTables.VILLAGE_TEMPLE_CHEST, 0.15F),
+            Map.entry(LootTables.VILLAGE_FLETCHER_CHEST, 0.1F),
+            Map.entry(LootTables.VILLAGE_SHEPARD_CHEST, 0.1F),
+            Map.entry(LootTables.VILLAGE_TANNERY_CHEST, 0.1F));
+
     private ModLootTableModifiers() {
     }
 
@@ -111,6 +126,8 @@ public final class ModLootTableModifiers {
             if (!source.isBuiltin()) return; // leave datapack-replaced tables alone
             Float stencilChance = STENCIL_CHESTS.get(key);
             if (stencilChance != null) tableBuilder.pool(stencilPool(stencilChance));
+            Float woodenDieChance = WOODEN_DIE_CHESTS.get(key);
+            if (woodenDieChance != null) tableBuilder.pool(woodenDiePool(woodenDieChance));
             if (key.equals(LootTables.WOODLAND_MANSION_CHEST)) {
                 tableBuilder.pool(gameMasterBookPool(registries, MANSION_CHEST_CHANCE, false));
             } else if (key.equals(evoker)) {
@@ -128,6 +145,13 @@ public final class ModLootTableModifiers {
                 .with(ItemEntry.builder(ModItems.STENCIL)
                         .apply(SetCountLootFunction.builder(UniformLootNumberProvider.create(1, 2)))
                         .apply(RandomStencilPatternLootFunction.builder()));
+    }
+
+    private static LootPool.Builder woodenDiePool(float chance) {
+        return LootPool.builder()
+                .rolls(ConstantLootNumberProvider.create(1))
+                .conditionally(RandomChanceLootCondition.builder(chance))
+                .with(ItemEntry.builder(ModItems.WOODEN_DICE));
     }
 
     private static LootPool.Builder gameMasterBookPool(RegistryWrapper.WrapperLookup registries, float chance, boolean killedByPlayer) {

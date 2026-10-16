@@ -2,7 +2,7 @@
   "parent": "steveparty:guide/root",
   "display": {
     "icon": {
-      "id": "steveparty:default_dice"
+      "id": "steveparty:wooden_dice"
     },
     "title": {
       "translate": "advancements.steveparty.guide.roll_the_dice.title"
@@ -22,6 +22,7 @@
         "items": [
           {
             "items": [
+              "steveparty:wooden_dice",
               "steveparty:default_dice",
               "steveparty:double_dice",
               "steveparty:triple_dice"

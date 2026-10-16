@@ -1,32 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_blaze_rod": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "minecraft:blaze_rod"
-          }
-        ]
-      }
-    },
     "has_lapis_crystal_ball": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
             "items": "steveparty:lapis_crystal_ball"
-          }
-        ]
-      }
-    },
-    "has_gold_block": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "minecraft:gold_block"
           }
         ]
       }
@@ -40,9 +20,7 @@
   },
   "requirements": [
     [
-      "has_blaze_rod",
       "has_lapis_crystal_ball",
-      "has_gold_block",
       "has_the_recipe"
     ]
   ],

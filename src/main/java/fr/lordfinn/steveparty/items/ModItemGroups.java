@@ -124,7 +124,7 @@ public final class ModItemGroups {
         // The 16 colours, in dye order: the blocks, then the fragments
         for (Block block : STAR_FRAGMENTS_BLOCKS) entries.add(block);
         for (Item fragment : STAR_FRAGMENTS) entries.add(fragment);
-        addAll(entries, DICE_FORGE, DEFAULT_DICE, DOUBLE_DICE, TRIPLE_DICE);
+        addAll(entries, DICE_FORGE, WOODEN_DICE, DEFAULT_DICE, DOUBLE_DICE, TRIPLE_DICE);
         // Ready-made dice: a cursed die (1, 2, 3), a coins die (+1 to +10), a slow die and a choice die (1 to 10)
         entries.add(presetDie("cursed_die", faces(Kind.CURSED, 3), null));
         entries.add(presetDie("coins_die", faces(Kind.COIN, 10), null));

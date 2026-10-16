@@ -364,7 +364,7 @@
 	]
 	quest.137ABC52300C1CE9.title: "Ton propre dé"
 	quest.13E6F42BB1F3D4AC.quest_desc: [
-		"Une Party Star entre 4 blocs de lapis-lazuli (l'étoile : voir Mulas et étoiles). La tête de la Baguette de pions."
+		"Un bloc de verre entre 4 blocs de lapis-lazuli. La tête de la Baguette de pions."
 	]
 	quest.13E6F42BB1F3D4AC.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.13E6F42BB1F3D4AC.title: "Boule de cristal en lapis"
@@ -611,6 +611,11 @@
 		"Écrasés, plantés, empilés et mis sur le plateau."
 	]
 	quest.29342BD8BA7FCED5.title: "Gardien des glands"
+	quest.29EFC1F34E182343.quest_desc: [
+		"Quatre planches autour d'un charbon (ou charbon de bois). Donne 1 à 6. Se trouve aussi dans les coffres des villages."
+	]
+	quest.29EFC1F34E182343.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
+	quest.29EFC1F34E182343.title: "Dé en bois"
 	quest.2AB220E13F0C50C3.quest_desc: [
 		"Lance un gland à 12 blocs de lui au plus : il oublie tout, même sa colère, et joue avec pendant 30 s à une minute."
 	]
@@ -635,7 +640,7 @@
 	quest.2BAA43480CA56926.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.2BAA43480CA56926.title: "Mât d'arrivée"
 	quest.2BD1848C751D2C08.quest_desc: [
-		"Boule de cristal en lapis, bloc d'or et bâton de Blaze, en colonne. Une baguette dorée à orbe de lapis."
+		"Boule de cristal en lapis sur deux lingots d'or, en diagonale. Une baguette dorée à orbe de lapis."
 	]
 	quest.2BD1848C751D2C08.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.2BD1848C751D2C08.title: "Baguette de pions"
@@ -858,7 +863,7 @@
 	quest.48EDC9CAA41959B9.title: "Fragment d'étoile violet"
 	quest.49297133DC9D18C2.quest_desc: [
 		"Un fragment de chaque : bleu, vert, jaune, rouge et violet (ou 5 noirs)."
-		"L'Étoile par défaut d'une partie. Elle entre aussi dans la Cartouche Étoile, la Boule de cristal en lapis, la Forge à dés et les tuyaux de mini-jeu en fer et en or."
+		"L'Étoile par défaut d'une partie. Elle entre aussi dans la Cartouche Étoile, la Forge à dés et les tuyaux de mini-jeu en fer et en or."
 	]
 	quest.49297133DC9D18C2.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.49297133DC9D18C2.title: "Party Star"

@@ -7,6 +7,7 @@
       "item": "steveparty:board_space_behavior"
     },
     {
+      "fabric:type": "fabric:components",
       "base": {
         "item": "steveparty:default_dice"
       },
@@ -28,8 +29,7 @@
             "weight": 2
           }
         ]
-      },
-      "fabric:type": "fabric:components"
+      }
     }
   ],
   "result": {
