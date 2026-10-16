@@ -31,11 +31,11 @@ public final class AllowedDice {
     private AllowedDice() {
     }
 
-    /** The list a new controller starts with: the plain Simple Die (no faces, no modules). */
+    /** The list a new controller starts with: the plain Simple Die (no faces, no modules) and the Wooden Die. */
     public static List<ItemStack> defaults() {
-        // The Simple Die and its power-up version (carrying the Power-up Module)
+        // The Simple Die, its power-up version (carrying the Power-up Module) and the Wooden Die
         ItemStack die = new ItemStack(ModItems.DEFAULT_DICE);
-        return List.of(die, DiceModules.set(die.copy(), Map.of(DiceModules.POWER_UP, 1)));
+        return List.of(die, DiceModules.set(die.copy(), Map.of(DiceModules.POWER_UP, 1)), new ItemStack(ModItems.WOODEN_DICE));
     }
 
     /** True if {@code stack} is a die (plain, double, triple, forged or not). */

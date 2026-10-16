@@ -57,6 +57,31 @@ public class DefaultDiceItem extends Item {
         super(settings);
     }
 
+    /** The highest number this die rolls without forged faces ({@link DiceEntity#MIN} to it): 10, 6 for the Wooden Die. */
+    public int plainMax() {
+        return DiceEntity.MAX;
+    }
+
+    /** Whether dice modules may be added to it (the Wooden Die takes none: they belong to the Simple Die and better). */
+    public boolean takesModules() {
+        return true;
+    }
+
+    /** The texture of its plain number faces: textures/entity/dice/&lt;name&gt;&lt;value&gt;.png. */
+    public String plainFaceTexture() {
+        return "default_dice";
+    }
+
+    /** {@link #plainMax} of the die in {@code stack}, {@link DiceEntity#MAX} for anything else. */
+    public static int plainMax(@Nullable ItemStack stack) {
+        return stack != null && stack.getItem() instanceof DefaultDiceItem die ? die.plainMax() : DiceEntity.MAX;
+    }
+
+    /** {@link #plainFaceTexture} of the die in {@code stack}, the Simple Die's for anything else. */
+    public static String plainFaceTexture(@Nullable ItemStack stack) {
+        return stack != null && stack.getItem() instanceof DefaultDiceItem die ? die.plainFaceTexture() : "default_dice";
+    }
+
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         // A power-up of the turn still at work (a player being picked, a warp), or a power-up die after another one
@@ -181,6 +206,7 @@ public class DefaultDiceItem extends Item {
         Tooltips tips = Tooltips.of(tooltip);
         DiceFacesComponent faces = stack.get(DiceFacesComponent.TYPE);
         if (faces != null && !faces.faces().isEmpty()) tips.state(faces.describe());
+        else if (!(this instanceof MultiDiceItem)) tips.state(DiceFacesComponent.describeRange(DiceEntity.MIN, plainMax()));
         for (Text line : DiceModules.tooltip(stack)) tips.state(line);
         tips.more(more -> {
             more.use(Tooltips.Keys.use(), "tooltip.steveparty.dice.use.mob");

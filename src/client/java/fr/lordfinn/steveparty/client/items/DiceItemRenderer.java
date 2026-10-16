@@ -20,13 +20,18 @@ import net.minecraft.util.math.RotationAxis;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+import fr.lordfinn.steveparty.items.custom.DefaultDiceItem;
+import net.minecraft.util.Identifier;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 /**
  * A die item (one, two or three dice) drawn as dice that keep rolling over: every {@link #STEP} ticks each die rolls a
  * quarter turn, alternately forward and sideways, and the face that lands underneath takes another of the die's faces
- * (its forged faces but the blank ones, or 1 to 10 for a plain die), each painted like the thrown die paints it. Everything follows from
+ * (its forged faces but the blank ones, or 1 to 10 for a plain die, 1 to 6 for the Wooden Die), each painted like the thrown die paints it. Everything follows from
  * the time (nothing kept between frames); the dice sit where the item models used to put their cubes, the models keep
  * their display transforms.
  */
@@ -50,15 +55,12 @@ public final class DiceItemRenderer implements BuiltinItemRendererRegistry.Dynam
     private static final Quaternionf[] ORIENTATIONS = new Quaternionf[CYCLE];
     /** For each face, the roll (1..6) of the cycle that lands it underneath. */
     private static final int[] LANDING = new int[FACES.length];
-    /** Plain dice: 1 to 10. */
-    private static final List<DiceFace> PLAIN = new ArrayList<>();
-    /** The layer of each face texture, by kind and value. */
-    private static final RenderLayer[][] LAYERS = new RenderLayer[Kind.values().length][DiceFace.MAX_COINS + 2];
+    /** The layer of each face texture, by its texture. */
+    private static final Map<Identifier, RenderLayer> LAYERS = new HashMap<>();
     /** The partial roll, reused (render thread only). */
     private static final Quaternionf ROLLING = new Quaternionf();
 
     static {
-        for (int value = DiceEntity.MIN; value <= DiceEntity.MAX; value++) PLAIN.add(new DiceFace(Kind.NORMAL, value));
         Quaternionf orientation = new Quaternionf();
         Vector3f direction = new Vector3f();
         for (int roll = 1; roll <= CYCLE; roll++) {
@@ -73,12 +75,14 @@ public final class DiceItemRenderer implements BuiltinItemRendererRegistry.Dynam
 
     /** Where each die sits, as the cubes of the item models: centre, then the element's rotation (origin, axis, angle). */
     private final float[][] dice;
+    /** Plain dice: 1 to 10 (1 to 6 for the Wooden Die), filled on the first frame. */
+    private List<DiceFace> plain;
 
     private DiceItemRenderer(float[][] dice) {
         this.dice = dice;
     }
 
-    /** One die, in the middle (models/item/default_dice.json). */
+    /** One die, in the middle (models/item/default_dice.json, wooden_dice.json). */
     public static DiceItemRenderer single() {
         return new DiceItemRenderer(new float[][]{{8, 8, 8, 8, 8, 8, 1, 0}});
     }
@@ -98,7 +102,7 @@ public final class DiceItemRenderer implements BuiltinItemRendererRegistry.Dynam
     public void render(ItemStack stack, ModelTransformationMode mode, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int light, int overlay) {
         DiceFacesComponent component = stack.get(DiceFacesComponent.TYPE);
-        List<DiceFace> faces = component == null || component.faces().isEmpty() ? PLAIN : shownFaces(component);
+        List<DiceFace> faces = component == null || component.faces().isEmpty() ? plainFaces(stack) : shownFaces(component);
         double time = time();
         for (int i = 0; i < dice.length; i++) {
             float[] die = dice[i];
@@ -106,9 +110,19 @@ public final class DiceItemRenderer implements BuiltinItemRendererRegistry.Dynam
             matrices.translate(die[3] / 16f, die[4] / 16f, die[5] / 16f);
             if (die[7] != 0) matrices.multiply(axis((int) die[6]).rotationDegrees(die[7]));
             matrices.translate((die[0] - die[3]) / 16f, (die[1] - die[4]) / 16f, (die[2] - die[5]) / 16f);
-            drawDie(faces, i, time - i * LAG, matrices, vertexConsumers, light, overlay);
+            drawDie(stack, faces, i, time - i * LAG, matrices, vertexConsumers, light, overlay);
             matrices.pop();
         }
+    }
+
+    /** The numbers of a plain die of this item (one renderer per item, so computed once). */
+    private List<DiceFace> plainFaces(ItemStack stack) {
+        if (plain == null) {
+            List<DiceFace> faces = new ArrayList<>();
+            for (int value = DiceEntity.MIN; value <= DefaultDiceItem.plainMax(stack); value++) faces.add(new DiceFace(Kind.NORMAL, value));
+            plain = faces;
+        }
+        return plain;
     }
 
     /** The faces a die rolls through: its blank faces left out (unless it only has blank ones), last result kept. */
@@ -131,7 +145,7 @@ public final class DiceItemRenderer implements BuiltinItemRendererRegistry.Dynam
     }
 
     /** Die {@code index} at {@code time}: the rolls done, the one under way, each face with its current value. */
-    private static void drawDie(List<DiceFace> faces, int index, double time, MatrixStack matrices,
+    private static void drawDie(ItemStack stack, List<DiceFace> faces, int index, double time, MatrixStack matrices,
                                 VertexConsumerProvider vertexConsumers, int light, int overlay) {
         long rolls = (long) Math.floor(time / STEP);
         float progress = Easing.smoothstep(Easing.clamp01((float) (time - rolls * STEP) / ROLL));
@@ -142,7 +156,7 @@ public final class DiceItemRenderer implements BuiltinItemRendererRegistry.Dynam
             // How many times this face has landed underneath: it shows a new value each time
             long landings = Math.floorDiv(rolls - LANDING[face], CYCLE) + 1;
             DiceFace shown = faces.get(pick(index, face, landings, faces.size()));
-            VertexConsumer consumer = vertexConsumers.getBuffer(layer(shown));
+            VertexConsumer consumer = vertexConsumers.getBuffer(layer(stack, shown));
             quad(consumer, entry, FACES[face], light, overlay);
         }
     }
@@ -167,15 +181,9 @@ public final class DiceItemRenderer implements BuiltinItemRendererRegistry.Dynam
         return (int) Math.floorMod(hash ^ (hash >>> 29), (long) count);
     }
 
-    private static RenderLayer layer(DiceFace face) {
-        int value = MathHelper.clamp(face.value(), 0, LAYERS[0].length - 1);
-        RenderLayer[] byValue = LAYERS[face.kind().ordinal()];
-        RenderLayer layer = byValue[value];
-        if (layer == null) {
-            layer = RenderLayer.getEntityCutout(DiceEntityRenderer.getTexture(face.kind(), value));
-            byValue[value] = layer;
-        }
-        return layer;
+    private static RenderLayer layer(ItemStack stack, DiceFace face) {
+        int value = MathHelper.clamp(face.value(), 0, DiceFace.MAX_COINS + 1);
+        return LAYERS.computeIfAbsent(DiceEntityRenderer.getTexture(stack, face.kind(), value), RenderLayer::getEntityCutout);
     }
 
     /** One face of the die: its normal, then the texture right and down directions. */

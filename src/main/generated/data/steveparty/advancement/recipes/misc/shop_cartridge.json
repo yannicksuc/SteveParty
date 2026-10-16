@@ -1,11 +1,11 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_board_space_behavior": {
+    "has_inventory_cartridge": {
       "conditions": {
         "items": [
           {
-            "items": "steveparty:board_space_behavior"
+            "items": "steveparty:inventory_cartridge"
           }
         ]
       },
@@ -21,7 +21,7 @@
   "requirements": [
     [
       "has_the_recipe",
-      "has_board_space_behavior"
+      "has_inventory_cartridge"
     ]
   ],
   "rewards": {

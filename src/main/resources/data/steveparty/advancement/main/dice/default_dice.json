@@ -2,7 +2,7 @@
   "parent": "steveparty:main/root",
   "display": {
     "icon": {
-      "id": "steveparty:default_dice",
+      "id": "steveparty:wooden_dice",
       "count": 1
     },
     "title": {
@@ -19,7 +19,10 @@
       "conditions": {
         "items": [
           {
-            "items": "steveparty:default_dice"
+            "items": [
+              "steveparty:wooden_dice",
+              "steveparty:default_dice"
+            ]
           }
         ]
       }

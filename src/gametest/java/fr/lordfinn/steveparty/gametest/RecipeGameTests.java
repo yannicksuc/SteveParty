@@ -187,7 +187,7 @@ public class RecipeGameTests implements SteveGameTest {
         context.complete();
     }
 
-    /** A gold nugget mints one coin (never the other way round), and that coin is what a fresh party counts as Pièce. */
+    /** A gold nugget mints one coin (never the other way round), and that coin is what a fresh party counts as PiÃ¨ce. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aGoldNuggetMintsTheCoinOfAFreshParty(TestContext context) {
         ItemStack coin = result(context, 1, 1, new ItemStack(Items.GOLD_NUGGET));
@@ -337,6 +337,20 @@ public class RecipeGameTests implements SteveGameTest {
                     context.assertFalse(ingredient.test(new ItemStack(late)), recipe.id() + " still needs " + late);
             }
         }
+        context.complete();
+    }
+
+    /** The Wooden Die: four planks (any wood) around a coal or a charcoal. */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theWoodenDieIsCarvedFromPlanks(TestContext context) {
+        ItemStack e = ItemStack.EMPTY, oak = new ItemStack(Items.OAK_PLANKS), birch = new ItemStack(Items.BIRCH_PLANKS);
+        ItemStack die = result(context, 3, 3, e, oak, e, birch, new ItemStack(Items.CHARCOAL), oak, e, oak, e);
+        context.assertTrue(die.isOf(ModItems.WOODEN_DICE) && die.getCount() == 1, "a wooden die, got " + die);
+        ItemStack coal = result(context, 3, 3, e, oak, e, oak, new ItemStack(Items.COAL), oak, e, oak, e);
+        context.assertTrue(coal.isOf(ModItems.WOODEN_DICE), "with coal too, got " + coal);
+        // Two Wooden Dice are not a Double Dice: that one stays made of Simple Dice
+        ItemStack wooden = new ItemStack(ModItems.WOODEN_DICE);
+        context.assertTrue(result(context, 2, 1, wooden, wooden.copy()).isEmpty(), "no double dice from wooden ones");
         context.complete();
     }
 }

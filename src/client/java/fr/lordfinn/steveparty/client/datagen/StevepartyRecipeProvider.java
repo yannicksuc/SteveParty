@@ -37,6 +37,7 @@ import net.minecraft.data.server.recipe.StonecuttingRecipeJsonBuilder;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.data.family.BlockFamily;
 import net.minecraft.item.DyeItem;
 import net.minecraft.recipe.Ingredient;
@@ -238,6 +239,15 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .input(Items.AMETHYST_SHARD)
                 .criterion(hasItem(Items.AMETHYST_SHARD), conditionsFromItem(Items.AMETHYST_SHARD))
                 .offerTo(exporter, id("gate_key"));
+        // The Wooden Die (1 to 6), the first die: four planks around a coal or charcoal, whose marks are its numbers
+        ShapedRecipeJsonBuilder.create(RecipeCategory.MISC, ModItems.WOODEN_DICE, 1)
+                .pattern(" P ")
+                .pattern("PCP")
+                .pattern(" P ")
+                .input('P', ItemTags.PLANKS)
+                .input('C', ItemTags.COALS)
+                .criterion("has_planks", conditionsFromTag(ItemTags.PLANKS))
+                .offerTo(exporter, id("wooden_dice"));
 
         generatePolishedConcrete();
         generatePolishedTerracotta();

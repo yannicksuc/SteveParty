@@ -340,6 +340,7 @@ public class StevepartyClient implements ClientModInitializer {
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.STENCIL, new StencilItemRenderer());
         // Dice items: dice rolling over through the faces of the die (one, two or three as the models lay them out)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.DEFAULT_DICE, DiceItemRenderer.single());
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.WOODEN_DICE, DiceItemRenderer.single());
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.DOUBLE_DICE, DiceItemRenderer.pair());
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.TRIPLE_DICE, DiceItemRenderer.trio());
         // Paint can of the stencil gun: colour of the selected dye

@@ -90,6 +90,7 @@ public class AllowedDiceGameTests implements SteveGameTest {
         context.assertTrue(!controller.isRestrictDice(), "off by default: every die");
         context.assertEquals(controller.getAllowedDice().size(), AllowedDice.defaults().size(), "the default list");
         context.assertTrue(AllowedDice.sameDie(controller.getAllowedDice().getFirst(), new ItemStack(ModItems.DEFAULT_DICE)), "the Simple Die first");
+        context.assertTrue(AllowedDice.allows(controller.getAllowedDice(), new ItemStack(ModItems.WOODEN_DICE)), "the Wooden Die allowed too");
         ItemStack forged = with(die("dice_face_1", "dice_face_2"), DiceModules.SLOW, 1);
         context.assertTrue(!controller.setAllowedDie(5, new ItemStack(ModItems.DEFAULT_DICE, 3)), "the same die twice is refused");
         context.assertTrue(controller.setAllowedDie(5, forged), "a forged die listed, after the last one");
