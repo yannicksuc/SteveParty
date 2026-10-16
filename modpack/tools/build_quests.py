@@ -298,9 +298,9 @@ q("wrench", -4, 0.5, I("wrench"), deps=["tile"], rewards=T2(),
          "Elle règle aussi podiums, mâts et Bulles d'apparition, et casse le plastique d'un coup."]))
 
 q("check_point", -6, 0.75, I("check_point"), deps=["tile"], rewards=T1(),
-  desc=(["4 light blue panes, any pressure plate and a chest: a Checkpoint.",
+  desc=(["4 light blue panes around a blank Cartridge: a Checkpoint, a blue bubble.",
          "Pawns float through without spending a step: free turns, forks and detours. Its role never triggers, except Stop and Shop."],
-        ["4 vitres bleu clair, une plaque de pression (n'importe laquelle) et un coffre : un Checkpoint.",
+        ["4 vitres bleu clair autour d'une Cartouche simple : un Checkpoint, une bulle bleue.",
          "Les pions le traversent sans dépenser de pas : virages, bifurcations et détours gratuits. Son rôle ne joue jamais, sauf Stop et Boutique."]))
 
 q("colours", -6, 2.25, C(), deps=["check_point"], rewards=T1(), icon="minecraft:glow_ink_sac",

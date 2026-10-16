@@ -1,22 +1,12 @@
 {
   "parent": "minecraft:recipes/root",
   "criteria": {
-    "has_pressure_plate": {
+    "has_board_space_behavior": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "items": "#steveparty:pressure_plates"
-          }
-        ]
-      }
-    },
-    "has_chest": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "items": "minecraft:chest"
+            "items": "steveparty:board_space_behavior"
           }
         ]
       }
@@ -40,8 +30,7 @@
   },
   "requirements": [
     [
-      "has_pressure_plate",
-      "has_chest",
+      "has_board_space_behavior",
       "has_light_blue_stained_glass_pane",
       "has_the_recipe"
     ]

@@ -261,17 +261,16 @@ public class RecipeGameTests implements SteveGameTest {
                 cartridge, new ItemStack(Items.TRAPPED_CHEST), cartridge);
         context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()), "advanced tile, got " + advanced);
 
-        // The Checkpoint, a tile's price: light blue glass panes around a pressure plate (any) and a chest, no prismarine
-        ItemStack pane = new ItemStack(Items.LIGHT_BLUE_STAINED_GLASS_PANE), chest = new ItemStack(Items.CHEST);
-        for (Item plate : List.of(Items.OAK_PRESSURE_PLATE, Items.STONE_PRESSURE_PLATE)) {
-            ItemStack checkpoint = result(context, 3, 2, pane, new ItemStack(plate), pane, pane, chest, pane);
-            context.assertTrue(checkpoint.isOf(ModBlocks.CHECK_POINT.asItem()) && checkpoint.getCount() == 1,
-                    "a checkpoint with " + plate + ", got " + checkpoint);
-        }
+        // The Checkpoint, a tile's price: a blue bubble, light blue glass panes around a blank cartridge
+        ItemStack pane = new ItemStack(Items.LIGHT_BLUE_STAINED_GLASS_PANE), o = ItemStack.EMPTY;
+        ItemStack checkpoint = result(context, 3, 3, o, pane, o, pane, cartridge, pane, o, pane, o);
+        context.assertTrue(checkpoint.isOf(ModBlocks.CHECK_POINT.asItem()) && checkpoint.getCount() == 1,
+                "a checkpoint from panes around a cartridge, got " + checkpoint);
         for (RecipeEntry<?> recipe : context.getWorld().getServer().getRecipeManager().values()) {
             if (!recipe.value().getResult(context.getWorld().getRegistryManager()).isOf(ModBlocks.CHECK_POINT.asItem())) continue;
             for (Ingredient ingredient : recipe.value().getIngredients())
-                context.assertFalse(ingredient.test(new ItemStack(Items.PRISMARINE_SHARD)), recipe.id() + " still needs prismarine");
+                for (Item no : List.of(Items.PRISMARINE_SHARD, Items.CHEST, Items.STONE_PRESSURE_PLATE))
+                    context.assertFalse(ingredient.test(new ItemStack(no)), recipe.id() + " still needs " + no);
         }
 
         // Mini-game pages: paper around a cartridge (a page is linked to pipes like a cartridge to tiles)
