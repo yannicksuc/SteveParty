@@ -730,8 +730,9 @@ public class StencilGameTests implements SteveGameTest {
         context.assertTrue(result(context, 3, 3, empty, pellets, empty, empty, pellets, empty, pellets, new ItemStack(Items.SHULKER_BOX), pellets).isEmpty(),
                 "no more token from a shulker box");
         ItemStack lapis = new ItemStack(Items.LAPIS_BLOCK);
-        context.assertTrue(result(context, 3, 3, empty, lapis, empty, lapis, new ItemStack(Items.GLASS), lapis, empty, lapis, empty)
-                .isOf(ModItems.LAPIS_CRYSTAL_BALL), "the crystal ball of the Tokenizer Wand is made with glass");
+        ItemStack glass = new ItemStack(Items.GLASS);
+        context.assertTrue(result(context, 3, 3, empty, glass, empty, glass, lapis, glass, empty, glass, empty)
+                .isOf(ModItems.LAPIS_CRYSTAL_BALL), "the crystal ball of the Tokenizer Wand is glass around a lapis block");
         context.assertTrue(result(context, 3, 3, empty, lapis, empty, lapis, new ItemStack(ModItems.PARTY_STAR), lapis, empty, lapis, empty)
                 .isEmpty(), "no more crystal ball from a Party Star");
         context.assertTrue(result(context, 3, 3, empty, lapis, empty, lapis, new ItemStack(Items.NETHER_STAR), lapis, empty, lapis, empty)

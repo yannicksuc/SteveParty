@@ -253,9 +253,9 @@ q("cartridge", 0, -7, I("board_space_behavior", 2), deps=["welcome.pellets"], si
          "Clic droit dans le vide : son menu."]))
 
 q("tile", -6, -1.5, I("tile"), deps=["cartridge"], rewards=[XP(15), IT("plastic_pellets", 4), IT("default_dice", 2)], size=1.25,
-  desc=(["4 white plastic slabs, a heavy pressure plate and a cartridge: a Tile holding that cartridge.",
+  desc=(["4 white plastic slabs, any pressure plate and a cartridge: a Tile holding that cartridge.",
          "One tile = one step. It goes in 8 directions, on slabs, carpets and even stairs."],
-        ["4 dalles de plastique blanc, une plaque de pression lourde et une cartouche : une Tuile qui la contient.",
+        ["4 dalles de plastique blanc, une plaque de pression (n'importe laquelle) et une cartouche : une Tuile qui la contient.",
          "Une tuile = un pas. Elle se pose dans 8 directions, sur dalles, tapis et même escaliers."]))
 
 q("brush", -4, -1.5, I("tile_linker_brush"), deps=["tile"], rewards=T2(),
@@ -297,10 +297,10 @@ q("wrench", -4, 0.5, I("wrench"), deps=["tile"], rewards=T2(),
          "Clic droit : ouvre tuiles et Checkpoints. Une cartouche en main secondaire remplace celle de la tuile, liens gardés.",
          "Elle règle aussi podiums, mâts et Bulles d'apparition, et casse le plastique d'un coup."]))
 
-q("check_point", -6, 0.75, I("check_point", 4), deps=["tile"], rewards=T1(),
-  desc=(["Prismarine shards + light blue panes + chest: 4 Checkpoints.",
+q("check_point", -6, 0.75, I("check_point"), deps=["tile"], rewards=T1(),
+  desc=(["4 light blue panes, any pressure plate and a chest: a Checkpoint.",
          "Pawns float through without spending a step: free turns, forks and detours. Its role never triggers, except Stop and Shop."],
-        ["Éclats de prismarine + vitres bleu clair + coffre : 4 Checkpoints.",
+        ["4 vitres bleu clair, une plaque de pression (n'importe laquelle) et un coffre : un Checkpoint.",
          "Les pions le traversent sans dépenser de pas : virages, bifurcations et détours gratuits. Son rôle ne joue jamais, sauf Stop et Boutique."]))
 
 q("colours", -6, 2.25, C(), deps=["check_point"], rewards=T1(), icon="minecraft:glow_ink_sac",
@@ -423,8 +423,8 @@ chapter("pawns", "board_game", "steveparty:tokenizer_wand",
          ["N'importe quelle créature devient un pion avec la Baguette de pions."]))
 
 q("crystal_ball", 0, 0, I("lapis_crystal_ball"), deps=["welcome.done"], rewards=T2(), size=1.25,
-  desc=(["A glass block in 4 lapis blocks. The head of the Tokenizer Wand."],
-        ["Un bloc de verre entre 4 blocs de lapis-lazuli. La tête de la Baguette de pions."]))
+  desc=(["A lapis block in 4 glass blocks. The head of the Tokenizer Wand."],
+        ["Un bloc de lapis-lazuli entre 4 blocs de verre. La tête de la Baguette de pions."]))
 
 q("wand", 2, 0, I("tokenizer_wand"), deps=["crystal_ball"], rewards=T3(),
   desc=(["Lapis crystal ball on two gold ingots, in a diagonal. A golden wand with a lapis orb."],

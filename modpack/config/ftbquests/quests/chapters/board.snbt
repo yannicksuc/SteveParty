@@ -391,7 +391,6 @@
 			]
 			tasks: [
 				{
-					count: 4L
 					id: "67290CD4FE66711E"
 					item: {
 						count: 1

@@ -172,7 +172,7 @@
 	quest.05A3BC086CC7390E.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.05A3BC086CC7390E.title: "Briques de terre cuite polie orange"
 	quest.05F0B762268E85CD.quest_desc: [
-		"4 dalles de plastique blanc, une plaque de pression lourde et une cartouche : une Tuile qui la contient."
+		"4 dalles de plastique blanc, une plaque de pression (n'importe laquelle) et une cartouche : une Tuile qui la contient."
 		"Une tuile = un pas. Elle se pose dans 8 directions, sur dalles, tapis et même escaliers."
 	]
 	quest.05F0B762268E85CD.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
@@ -273,7 +273,7 @@
 	quest.0D7BD49CCA0CD53D.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.0D7BD49CCA0CD53D.title: "Dalle en plastique jaune"
 	quest.0DEA2F4B09B1E78E.quest_desc: [
-		"Éclats de prismarine + vitres bleu clair + coffre : 4 Checkpoints."
+		"4 vitres bleu clair, une plaque de pression (n'importe laquelle) et un coffre : un Checkpoint."
 		"Les pions le traversent sans dépenser de pas : virages, bifurcations et détours gratuits. Son rôle ne joue jamais, sauf Stop et Boutique."
 	]
 	quest.0DEA2F4B09B1E78E.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
@@ -364,7 +364,7 @@
 	]
 	quest.137ABC52300C1CE9.title: "Ton propre dé"
 	quest.13E6F42BB1F3D4AC.quest_desc: [
-		"Un bloc de verre entre 4 blocs de lapis-lazuli. La tête de la Baguette de pions."
+		"Un bloc de lapis-lazuli entre 4 blocs de verre. La tête de la Baguette de pions."
 	]
 	quest.13E6F42BB1F3D4AC.quest_subtitle: "À fabriquer (ceux de ton inventaire ne comptent pas)"
 	quest.13E6F42BB1F3D4AC.title: "Boule de cristal en lapis"

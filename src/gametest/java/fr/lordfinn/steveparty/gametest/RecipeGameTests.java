@@ -250,13 +250,29 @@ public class RecipeGameTests implements SteveGameTest {
 
         // The Tile and the Advanced Tile (their cartridges loaded: TileCartridgeGameTests)
         ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[DyeColor.WHITE.getId()]);
-        ItemStack tile = result(context, 3, 2, white, new ItemStack(Items.HEAVY_WEIGHTED_PRESSURE_PLATE), white, white, cartridge, white);
-        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 1
-                && TileContents.cartridges(tile).size() == 1, "an equipped tile, got " + tile);
+        for (Item plate : List.of(Items.OAK_PRESSURE_PLATE, Items.STONE_PRESSURE_PLATE, Items.CRIMSON_PRESSURE_PLATE,
+                Items.POLISHED_BLACKSTONE_PRESSURE_PLATE, Items.LIGHT_WEIGHTED_PRESSURE_PLATE, Items.HEAVY_WEIGHTED_PRESSURE_PLATE)) {
+            ItemStack tile = result(context, 3, 2, white, new ItemStack(plate), white, white, cartridge, white);
+            context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 1
+                    && TileContents.cartridges(tile).size() == 1, "an equipped tile with " + plate + ", got " + tile);
+        }
         ItemStack yellow = new ItemStack(ModBlocks.PLASTIC_SLABS[DyeColor.YELLOW.getId()]);
         ItemStack advanced = result(context, 3, 2, yellow, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), yellow,
                 cartridge, new ItemStack(Items.TRAPPED_CHEST), cartridge);
         context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()), "advanced tile, got " + advanced);
+
+        // The Checkpoint, a tile's price: light blue glass panes around a pressure plate (any) and a chest, no prismarine
+        ItemStack pane = new ItemStack(Items.LIGHT_BLUE_STAINED_GLASS_PANE), chest = new ItemStack(Items.CHEST);
+        for (Item plate : List.of(Items.OAK_PRESSURE_PLATE, Items.STONE_PRESSURE_PLATE)) {
+            ItemStack checkpoint = result(context, 3, 2, pane, new ItemStack(plate), pane, pane, chest, pane);
+            context.assertTrue(checkpoint.isOf(ModBlocks.CHECK_POINT.asItem()) && checkpoint.getCount() == 1,
+                    "a checkpoint with " + plate + ", got " + checkpoint);
+        }
+        for (RecipeEntry<?> recipe : context.getWorld().getServer().getRecipeManager().values()) {
+            if (!recipe.value().getResult(context.getWorld().getRegistryManager()).isOf(ModBlocks.CHECK_POINT.asItem())) continue;
+            for (Ingredient ingredient : recipe.value().getIngredients())
+                context.assertFalse(ingredient.test(new ItemStack(Items.PRISMARINE_SHARD)), recipe.id() + " still needs prismarine");
+        }
 
         // Mini-game pages: paper around a cartridge (a page is linked to pipes like a cartridge to tiles)
         ItemStack paper = new ItemStack(Items.PAPER), none = ItemStack.EMPTY;
@@ -319,14 +335,17 @@ public class RecipeGameTests implements SteveGameTest {
     }
 
     /**
-     * The pawn chain is early game: the Lapis Crystal Ball is lapis blocks around glass, the Tokenizer Wand that ball on
+     * The pawn chain is early game: the Lapis Crystal Ball is glass around a lapis block, the Tokenizer Wand that ball on
      * two gold ingots. No Party Star, no blaze rod, in any recipe of either.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theCrystalBallAndTheWandNeedNoStar(TestContext context) {
         ItemStack e = ItemStack.EMPTY, lapis = new ItemStack(Items.LAPIS_BLOCK), gold = new ItemStack(Items.GOLD_INGOT);
-        ItemStack ball = result(context, 3, 3, e, lapis, e, lapis, new ItemStack(Items.GLASS), lapis, e, lapis, e);
-        context.assertTrue(ball.isOf(ModItems.LAPIS_CRYSTAL_BALL), "crystal ball from lapis and glass, got " + ball);
+        ItemStack glass = new ItemStack(Items.GLASS);
+        ItemStack ball = result(context, 3, 3, e, glass, e, glass, lapis, glass, e, glass, e);
+        context.assertTrue(ball.isOf(ModItems.LAPIS_CRYSTAL_BALL), "crystal ball from glass around lapis, got " + ball);
+        context.assertTrue(result(context, 3, 3, e, lapis, e, lapis, glass, lapis, e, lapis, e).isEmpty(),
+                "no more crystal ball from lapis around glass");
         ItemStack wand = result(context, 3, 3, e, e, new ItemStack(ModItems.LAPIS_CRYSTAL_BALL), e, gold, e, gold, e, e);
         context.assertTrue(wand.isOf(ModItems.TOKENIZER_WAND), "wand from the ball and gold, got " + wand);
         for (RecipeEntry<?> recipe : context.getWorld().getServer().getRecipeManager().values()) {

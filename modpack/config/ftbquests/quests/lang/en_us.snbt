@@ -172,7 +172,7 @@
 	quest.05A3BC086CC7390E.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.05A3BC086CC7390E.title: "Polished Orange Terracotta Bricks"
 	quest.05F0B762268E85CD.quest_desc: [
-		"4 white plastic slabs, a heavy pressure plate and a cartridge: a Tile holding that cartridge."
+		"4 white plastic slabs, any pressure plate and a cartridge: a Tile holding that cartridge."
 		"One tile = one step. It goes in 8 directions, on slabs, carpets and even stairs."
 	]
 	quest.05F0B762268E85CD.quest_subtitle: "Craft it (owned ones don't count)"
@@ -273,7 +273,7 @@
 	quest.0D7BD49CCA0CD53D.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.0D7BD49CCA0CD53D.title: "Yellow Plastic Slab"
 	quest.0DEA2F4B09B1E78E.quest_desc: [
-		"Prismarine shards + light blue panes + chest: 4 Checkpoints."
+		"4 light blue panes, any pressure plate and a chest: a Checkpoint."
 		"Pawns float through without spending a step: free turns, forks and detours. Its role never triggers, except Stop and Shop."
 	]
 	quest.0DEA2F4B09B1E78E.quest_subtitle: "Craft it (owned ones don't count)"
@@ -364,7 +364,7 @@
 	]
 	quest.137ABC52300C1CE9.title: "Your own die"
 	quest.13E6F42BB1F3D4AC.quest_desc: [
-		"A glass block in 4 lapis blocks. The head of the Tokenizer Wand."
+		"A lapis block in 4 glass blocks. The head of the Tokenizer Wand."
 	]
 	quest.13E6F42BB1F3D4AC.quest_subtitle: "Craft it (owned ones don't count)"
 	quest.13E6F42BB1F3D4AC.title: "Lapis Crystal Ball"
