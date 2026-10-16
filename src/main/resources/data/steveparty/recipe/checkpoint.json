@@ -2,15 +2,13 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "pattern": [
-    "LIL",
-    "LCL"
+    " L ",
+    "LCL",
+    " L "
   ],
   "key": {
-    "I": {
-      "tag": "steveparty:pressure_plates"
-    },
     "C": {
-      "item": "minecraft:chest"
+      "item": "steveparty:board_space_behavior"
     },
     "L": {
       "item": "minecraft:light_blue_stained_glass_pane"
