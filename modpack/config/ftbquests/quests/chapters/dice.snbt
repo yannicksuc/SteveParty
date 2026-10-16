@@ -15,6 +15,48 @@
 			dependencies: [
 				"0ED330980267EDAF"
 			]
+			id: "29EFC1F34E182343"
+			rewards: [
+				{
+					id: "4B86787A161ED4FA"
+					type: "xp"
+					xp: 15
+				}
+				{
+					id: "1E8811993A5CB484"
+					item: {
+						count: 1
+						id: "steveparty:coin"
+					}
+					type: "item"
+				}
+				{
+					auto: "invisible"
+					command: "/scoreboard players add {p} steveparty_quests 1"
+					elevate_perms: true
+					id: "4C7175881871A1E8"
+					silent: true
+					type: "command"
+				}
+			]
+			tasks: [
+				{
+					id: "660914E5E2FEE6A1"
+					item: {
+						count: 1
+						id: "steveparty:wooden_dice"
+					}
+					only_from_crafting: true
+					type: "item"
+				}
+			]
+			x: 2.75d
+			y: -4.5d
+		}
+		{
+			dependencies: [
+				"0ED330980267EDAF"
+			]
 			id: "7E41138FB7521482"
 			rewards: [
 				{
@@ -55,8 +97,10 @@
 		}
 		{
 			dependencies: [
+				"29EFC1F34E182343"
 				"7E41138FB7521482"
 			]
+			dependency_requirement: "one_completed"
 			icon: {
 				id: "steveparty:default_dice"
 			}
