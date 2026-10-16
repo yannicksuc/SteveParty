@@ -17,6 +17,7 @@ import me.shedaniel.rei.plugin.common.displays.crafting.DefaultCustomShapedDispl
 import me.shedaniel.rei.plugin.common.displays.crafting.DefaultCustomShapelessDisplay;
 import dev.architectury.event.EventResult;
 import fr.lordfinn.steveparty.recipes.TileCartridgeRecipe;
+import fr.lordfinn.steveparty.client.datagen.StevepartyReferenceItemTagProvider;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
@@ -156,7 +157,7 @@ public class SteveReiPlugin implements REIClientPlugin {
         List<ItemStack> tiles = new ArrayList<>();
         for (ItemStack cartridge : cartridges) tiles.add(CartridgeApplications.holding(new ItemStack(ModBlocks.TILE), cartridge));
         registry.add(DefaultCustomShapedDisplay.simple(
-                List.of(white, EntryIngredients.of(Items.HEAVY_WEIGHTED_PRESSURE_PLATE), white, white, cycle, white),
+                List.of(white, EntryIngredients.ofItemTag(StevepartyReferenceItemTagProvider.PRESSURE_PLATES_TAG), white, white, cycle, white),
                 List.of(EntryIngredients.ofItemStacks(tiles)), 3, 2, Optional.of(tileId)));
 
         EntryIngredient yellow = EntryIngredients.of(ModBlocks.PLASTIC_SLABS[DyeColor.YELLOW.getId()]);

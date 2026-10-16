@@ -250,9 +250,12 @@ public class RecipeGameTests implements SteveGameTest {
 
         // The Tile and the Advanced Tile (their cartridges loaded: TileCartridgeGameTests)
         ItemStack white = new ItemStack(ModBlocks.PLASTIC_SLABS[DyeColor.WHITE.getId()]);
-        ItemStack tile = result(context, 3, 2, white, new ItemStack(Items.HEAVY_WEIGHTED_PRESSURE_PLATE), white, white, cartridge, white);
-        context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 1
-                && TileContents.cartridges(tile).size() == 1, "an equipped tile, got " + tile);
+        for (Item plate : List.of(Items.OAK_PRESSURE_PLATE, Items.STONE_PRESSURE_PLATE, Items.CRIMSON_PRESSURE_PLATE,
+                Items.POLISHED_BLACKSTONE_PRESSURE_PLATE, Items.LIGHT_WEIGHTED_PRESSURE_PLATE, Items.HEAVY_WEIGHTED_PRESSURE_PLATE)) {
+            ItemStack tile = result(context, 3, 2, white, new ItemStack(plate), white, white, cartridge, white);
+            context.assertTrue(tile.isOf(ModBlocks.TILE.asItem()) && tile.getCount() == 1
+                    && TileContents.cartridges(tile).size() == 1, "an equipped tile with " + plate + ", got " + tile);
+        }
         ItemStack yellow = new ItemStack(ModBlocks.PLASTIC_SLABS[DyeColor.YELLOW.getId()]);
         ItemStack advanced = result(context, 3, 2, yellow, new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE), yellow,
                 cartridge, new ItemStack(Items.TRAPPED_CHEST), cartridge);

@@ -6,7 +6,7 @@
       "tag": "steveparty:cartridges"
     },
     "I": {
-      "item": "minecraft:heavy_weighted_pressure_plate"
+      "tag": "steveparty:pressure_plates"
     },
     "P": {
       "item": "steveparty:white_plastic_slab"

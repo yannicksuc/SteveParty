@@ -10,6 +10,7 @@ import net.minecraft.registry.tag.ItemTags;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataOutput;
 import net.fabricmc.fabric.api.datagen.v1.provider.FabricTagProvider;
 import net.minecraft.item.Item;
+import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.tag.TagKey;
@@ -28,6 +29,10 @@ public class StevepartyReferenceItemTagProvider  extends FabricTagProvider<Item>
     public static final TagKey<Item> CARTRIDGES_TAG =
             TagKey.of(RegistryKeys.ITEM, Steveparty.id("cartridges"));
 
+    /** Every pressure plate, wooden or not (the plate of the Tile recipe): vanilla has no item tag for them all. */
+    public static final TagKey<Item> PRESSURE_PLATES_TAG =
+            TagKey.of(RegistryKeys.ITEM, Steveparty.id("pressure_plates"));
+
     public StevepartyReferenceItemTagProvider(FabricDataOutput output, CompletableFuture<RegistryWrapper.WrapperLookup> registriesFuture) {
         super(output, RegistryKeys.ITEM, registriesFuture);
     }
@@ -43,6 +48,9 @@ public class StevepartyReferenceItemTagProvider  extends FabricTagProvider<Item>
         }
         for (Item fragment : ModItems.STAR_FRAGMENTS)
             getOrCreateTagBuilder(STAR_FRAGMENTS_TAG).add(fragment);
+        getOrCreateTagBuilder(PRESSURE_PLATES_TAG).forceAddTag(ItemTags.WOODEN_PRESSURE_PLATES)
+                .add(Items.STONE_PRESSURE_PLATE, Items.POLISHED_BLACKSTONE_PRESSURE_PLATE,
+                        Items.LIGHT_WEIGHTED_PRESSURE_PLATE, Items.HEAVY_WEIGHTED_PRESSURE_PLATE);
         for (Block fence : ModBlocks.PLASTIC_FENCES)
             getOrCreateTagBuilder(ItemTags.FENCES).add(fence.asItem());
         for (int i = 0; i < ModBlocks.COLORS.length; i++) {

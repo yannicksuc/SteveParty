@@ -410,21 +410,21 @@ public class StevepartyRecipeProvider extends FabricRecipeProvider {
                 .criterion(hasItem(ModItems.INVENTORY_CARTRIDGE), conditionsFromItem(ModItems.INVENTORY_CARTRIDGE))
                 .offerTo(exporter);
 
-        // The Tile: white plastic slabs around an iron pressure plate (it feels the tokens landing on it) and a
+        // The Tile: white plastic slabs around a pressure plate, any (it feels the tokens landing on it) and a
         // cartridge, which the Tile holds as it is (colour, links, settings: TileShapedRecipe)
         Identifier tile = Steveparty.id("tile");
         Ingredient cartridges = Ingredient.fromTag(StevepartyReferenceItemTagProvider.CARTRIDGES_TAG);
         Item whiteSlab = ModBlocks.PLASTIC_SLABS[DyeColor.WHITE.getId()].asItem();
         exporter.accept(tile, new TileShapedRecipe("", CraftingRecipeCategory.REDSTONE, RawShapedRecipe.create(Map.of(
                         'P', Ingredient.ofItems(whiteSlab),
-                        'I', Ingredient.ofItems(Items.HEAVY_WEIGHTED_PRESSURE_PLATE),
+                        'I', Ingredient.fromTag(StevepartyReferenceItemTagProvider.PRESSURE_PLATES_TAG),
                         'C', cartridges), "PIP", "PCP"),
                         TileContents.holding(new ItemStack(ModBlocks.TILE), new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR)), true),
                 exporter.getAdvancementBuilder()
                         .criterion("has_the_recipe", RecipeUnlockedCriterion.create(tile))
                         .criterion(hasItem(ModItems.PLASTIC_PELLETS), conditionsFromItem(ModItems.PLASTIC_PELLETS))
                         .criterion(hasItem(ModItems.BOARD_SPACE_BEHAVIOR), conditionsFromItem(ModItems.BOARD_SPACE_BEHAVIOR))
-                        .criterion(hasItem(Items.HEAVY_WEIGHTED_PRESSURE_PLATE), conditionsFromItem(Items.HEAVY_WEIGHTED_PRESSURE_PLATE))
+                        .criterion("has_pressure_plate", conditionsFromTag(StevepartyReferenceItemTagProvider.PRESSURE_PLATES_TAG))
                         .rewards(AdvancementRewards.Builder.recipe(tile))
                         .criteriaMerger(AdvancementRequirements.CriterionMerger.OR)
                         .build(tile.withPrefixedPath("recipes/redstone/")));
