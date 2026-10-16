@@ -1,15 +1,13 @@
 {
   "type": "minecraft:crafting_shaped",
-  "fabric:type": "minecraft:crafting_shaped",
   "category": "redstone",
   "pattern": [
-    "PLP",
-    "LCL",
-    "PLP"
+    "LIL",
+    "LCL"
   ],
   "key": {
-    "P": {
-      "item": "prismarine_shard"
+    "I": {
+      "tag": "steveparty:pressure_plates"
     },
     "C": {
       "item": "minecraft:chest"
@@ -19,7 +17,6 @@
     }
   },
   "result": {
-    "id": "steveparty:check_point",
-    "count": 4
+    "id": "steveparty:check_point"
   }
 }

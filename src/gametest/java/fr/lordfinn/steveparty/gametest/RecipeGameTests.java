@@ -261,6 +261,19 @@ public class RecipeGameTests implements SteveGameTest {
                 cartridge, new ItemStack(Items.TRAPPED_CHEST), cartridge);
         context.assertTrue(advanced.isOf(ModBlocks.ADVANCED_TILE.asItem()), "advanced tile, got " + advanced);
 
+        // The Checkpoint, a tile's price: light blue glass panes around a pressure plate (any) and a chest, no prismarine
+        ItemStack pane = new ItemStack(Items.LIGHT_BLUE_STAINED_GLASS_PANE), chest = new ItemStack(Items.CHEST);
+        for (Item plate : List.of(Items.OAK_PRESSURE_PLATE, Items.STONE_PRESSURE_PLATE)) {
+            ItemStack checkpoint = result(context, 3, 2, pane, new ItemStack(plate), pane, pane, chest, pane);
+            context.assertTrue(checkpoint.isOf(ModBlocks.CHECK_POINT.asItem()) && checkpoint.getCount() == 1,
+                    "a checkpoint with " + plate + ", got " + checkpoint);
+        }
+        for (RecipeEntry<?> recipe : context.getWorld().getServer().getRecipeManager().values()) {
+            if (!recipe.value().getResult(context.getWorld().getRegistryManager()).isOf(ModBlocks.CHECK_POINT.asItem())) continue;
+            for (Ingredient ingredient : recipe.value().getIngredients())
+                context.assertFalse(ingredient.test(new ItemStack(Items.PRISMARINE_SHARD)), recipe.id() + " still needs prismarine");
+        }
+
         // Mini-game pages: paper around a cartridge (a page is linked to pipes like a cartridge to tiles)
         ItemStack paper = new ItemStack(Items.PAPER), none = ItemStack.EMPTY;
         ItemStack pages = result(context, 3, 3, none, paper, none, paper, new ItemStack(ModItems.BOARD_SPACE_BEHAVIOR), paper, none, paper, none);
