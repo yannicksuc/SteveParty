@@ -319,14 +319,17 @@ public class RecipeGameTests implements SteveGameTest {
     }
 
     /**
-     * The pawn chain is early game: the Lapis Crystal Ball is lapis blocks around glass, the Tokenizer Wand that ball on
+     * The pawn chain is early game: the Lapis Crystal Ball is glass around a lapis block, the Tokenizer Wand that ball on
      * two gold ingots. No Party Star, no blaze rod, in any recipe of either.
      */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void theCrystalBallAndTheWandNeedNoStar(TestContext context) {
         ItemStack e = ItemStack.EMPTY, lapis = new ItemStack(Items.LAPIS_BLOCK), gold = new ItemStack(Items.GOLD_INGOT);
-        ItemStack ball = result(context, 3, 3, e, lapis, e, lapis, new ItemStack(Items.GLASS), lapis, e, lapis, e);
-        context.assertTrue(ball.isOf(ModItems.LAPIS_CRYSTAL_BALL), "crystal ball from lapis and glass, got " + ball);
+        ItemStack glass = new ItemStack(Items.GLASS);
+        ItemStack ball = result(context, 3, 3, e, glass, e, glass, lapis, glass, e, glass, e);
+        context.assertTrue(ball.isOf(ModItems.LAPIS_CRYSTAL_BALL), "crystal ball from glass around lapis, got " + ball);
+        context.assertTrue(result(context, 3, 3, e, lapis, e, lapis, glass, lapis, e, lapis, e).isEmpty(),
+                "no more crystal ball from lapis around glass");
         ItemStack wand = result(context, 3, 3, e, e, new ItemStack(ModItems.LAPIS_CRYSTAL_BALL), e, gold, e, gold, e, e);
         context.assertTrue(wand.isOf(ModItems.TOKENIZER_WAND), "wand from the ball and gold, got " + wand);
         for (RecipeEntry<?> recipe : context.getWorld().getServer().getRecipeManager().values()) {
