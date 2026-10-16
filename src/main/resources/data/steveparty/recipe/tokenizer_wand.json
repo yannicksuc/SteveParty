@@ -1,21 +1,17 @@
 {
   "type": "minecraft:crafting_shaped",
-  "fabric:type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
     "  B",
     " G ",
-    "R  "
+    "G  "
   ],
   "key": {
-    "R": {
-      "item": "minecraft:blaze_rod"
-    },
     "B": {
       "item": "steveparty:lapis_crystal_ball"
     },
     "G": {
-      "item": "minecraft:gold_block"
+      "item": "minecraft:gold_ingot"
     }
   },
   "result": {

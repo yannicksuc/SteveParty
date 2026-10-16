@@ -1,5 +1,6 @@
 package fr.lordfinn.steveparty.gametest;
 
+import net.minecraft.recipe.Ingredient;
 import fr.lordfinn.steveparty.gametest.kit.SteveGameTest;
 import fr.lordfinn.steveparty.Steveparty;
 import fr.lordfinn.steveparty.blocks.ModBlocks;
@@ -186,7 +187,7 @@ public class RecipeGameTests implements SteveGameTest {
         context.complete();
     }
 
-    /** A gold nugget mints one coin (never the other way round), and that coin is what a fresh party counts as PiÃ¨ce. */
+    /** A gold nugget mints one coin (never the other way round), and that coin is what a fresh party counts as Pièce. */
     @GameTest(templateName = EMPTY_STRUCTURE)
     public void aGoldNuggetMintsTheCoinOfAFreshParty(TestContext context) {
         ItemStack coin = result(context, 1, 1, new ItemStack(Items.GOLD_NUGGET));
@@ -314,6 +315,28 @@ public class RecipeGameTests implements SteveGameTest {
         context.assertTrue(result(context, 3, 1, red, new ItemStack(Items.PAPER), new ItemStack(Items.REDSTONE)).isEmpty(), "a stud of another colour makes no card");
         context.assertTrue(result(context, 3, 1, new ItemStack(Items.PAPER), new ItemStack(Items.PAPER), new ItemStack(Items.CLOCK)).isEmpty(),
                 "the old recipes are gone");
+        context.complete();
+    }
+
+    /**
+     * The pawn chain is early game: the Lapis Crystal Ball is lapis blocks around glass, the Tokenizer Wand that ball on
+     * two gold ingots. No Party Star, no blaze rod, in any recipe of either.
+     */
+    @GameTest(templateName = EMPTY_STRUCTURE)
+    public void theCrystalBallAndTheWandNeedNoStar(TestContext context) {
+        ItemStack e = ItemStack.EMPTY, lapis = new ItemStack(Items.LAPIS_BLOCK), gold = new ItemStack(Items.GOLD_INGOT);
+        ItemStack ball = result(context, 3, 3, e, lapis, e, lapis, new ItemStack(Items.GLASS), lapis, e, lapis, e);
+        context.assertTrue(ball.isOf(ModItems.LAPIS_CRYSTAL_BALL), "crystal ball from lapis and glass, got " + ball);
+        ItemStack wand = result(context, 3, 3, e, e, new ItemStack(ModItems.LAPIS_CRYSTAL_BALL), e, gold, e, gold, e, e);
+        context.assertTrue(wand.isOf(ModItems.TOKENIZER_WAND), "wand from the ball and gold, got " + wand);
+        for (RecipeEntry<?> recipe : context.getWorld().getServer().getRecipeManager().values()) {
+            ItemStack output = recipe.value().getResult(context.getWorld().getRegistryManager());
+            if (!output.isOf(ModItems.LAPIS_CRYSTAL_BALL) && !output.isOf(ModItems.TOKENIZER_WAND)) continue;
+            for (Ingredient ingredient : recipe.value().getIngredients()) {
+                for (Item late : List.of(ModItems.PARTY_STAR, Items.BLAZE_ROD, Items.GOLD_BLOCK))
+                    context.assertFalse(ingredient.test(new ItemStack(late)), recipe.id() + " still needs " + late);
+            }
+        }
         context.complete();
     }
 }

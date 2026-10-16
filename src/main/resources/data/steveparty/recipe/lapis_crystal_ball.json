@@ -1,18 +1,17 @@
 {
   "type": "minecraft:crafting_shaped",
-  "fabric:type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
-    " R ",
-    "RWR",
-    " R "
+    " L ",
+    "LGL",
+    " L "
   ],
   "key": {
-    "R": {
+    "L": {
       "item": "minecraft:lapis_block"
     },
-    "W": {
-      "item": "steveparty:party_star"
+    "G": {
+      "item": "minecraft:glass"
     }
   },
   "result": {
